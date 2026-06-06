@@ -2,12 +2,26 @@ import { Meilisearch } from 'meilisearch'
 
 const host = process.env.MEILISEARCH_HOST || 'http://localhost:7700'
 const apiKey = process.env.MEILISEARCH_API_KEY || ''
+const searchEnabled = process.env.MEILISEARCH_ENABLED !== 'false' && Boolean(host)
 
 export const searchClient = new Meilisearch({ host, apiKey })
 
 const POSTS_INDEX = 'posts'
+let warnedUnavailable = false
+
+function warnSearchUnavailable(action: string, err: unknown) {
+  if (warnedUnavailable) return
+  warnedUnavailable = true
+
+  const cause = err instanceof Error ? err.message : String(err)
+  console.warn(
+    `Meilisearch unavailable; skipped ${action}. Start it with "docker compose up -d meilisearch" or set MEILISEARCH_ENABLED=false. Cause: ${cause}`,
+  )
+}
 
 export async function indexPost(post: Record<string, unknown>) {
+  if (!searchEnabled) return
+
   try {
     const index = searchClient.index(POSTS_INDEX)
     await index.addDocuments([{
@@ -30,16 +44,18 @@ export async function indexPost(post: Record<string, unknown>) {
       isBreakingNews: post.isBreakingNews,
     }])
   } catch (err) {
-    console.error('Failed to index post to Meilisearch:', err)
+    warnSearchUnavailable('post indexing', err)
   }
 }
 
 export async function removePostFromIndex(postId: string) {
+  if (!searchEnabled) return
+
   try {
     const index = searchClient.index(POSTS_INDEX)
     await index.deleteDocument(postId)
   } catch (err) {
-    console.error('Failed to remove post from Meilisearch:', err)
+    warnSearchUnavailable('post removal from index', err)
   }
 }
 
@@ -48,6 +64,8 @@ export async function searchPosts(query: string, options?: {
   page?: number
   limit?: number
 }) {
+  if (!searchEnabled) return { items: [], total: 0, page: 1, limit: options?.limit || 10 }
+
   try {
     const index = searchClient.index(POSTS_INDEX)
     const filters: string[] = []
@@ -67,7 +85,7 @@ export async function searchPosts(query: string, options?: {
       limit: result.hitsPerPage || 10,
     }
   } catch (err) {
-    console.error('Search failed:', err)
+    warnSearchUnavailable('search query', err)
     return { items: [], total: 0, page: 1, limit: 10 }
   }
 }
