@@ -1,0 +1,83 @@
+<h2>⚡ Infrastructure (Phase 4)</h2>
+<p class="subtitle">Meilisearch + Redis + Docker Deploy + R2/S3 Ready</p>
+
+<div class="cards" style="grid-template-columns: repeat(2, 1fr); margin-top: 1.5rem;">
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🔍 Meilisearch</h3>
+      <p style="font-size: 0.85rem;">
+        Index: <code>posts</code><br>
+        Sync via Payload hooks (afterChange, afterDelete)<br>
+        <strong>Masuk index:</strong> status=published & publishedAt≤now & allowIndex=true<br>
+        <strong>Keluar index:</strong> archived, deleted, unpublished<br>
+        Search page consume Meilisearch API langsung
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>⚡ Redis Cache</h3>
+      <p style="font-size: 0.85rem;">
+        <strong>Cache keys:</strong><br>
+        homepage, category:{slug}:page:{n},<br>
+        tag:{slug}:page:{n}, post:{slug}, popular-posts<br>
+        <strong>Invalidate:</strong> via hooks saat publish/edit/delete<br>
+        <strong>View counter:</strong> views:post:{id} → sync ke DB
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🐳 Docker Compose</h3>
+      <p style="font-size: 0.85rem;">
+        4 services: app (Next.js), postgres, redis, meilisearch<br>
+        Volume persistent untuk media<br>
+        Env vars via .env<br>
+        Health checks tiap service
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>☁️ R2/S3 Migration Ready</h3>
+      <p style="font-size: 0.85rem;">
+        Helper <code>getMediaUrl()</code> — semua URL media lewat sini<br>
+        <code>STORAGE_DRIVER=local|s3</code> via env<br>
+        Tidak ada hardcode path media di frontend<br>
+        Image component terpusat
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <h3>🔗 Hook System — Sync Pipeline</h3>
+  <div class="mockup">
+    <div class="mockup-header">Payload Hooks</div>
+    <div class="mockup-body" style="text-align: left; font-size: 0.8rem;">
+<pre>
+Posts.afterChange ──┬──→ Meilisearch sync (publish/unpublish)
+                    ├──→ Redis cache invalidation
+                    ├──→ Redirect auto-create (slug change)
+                    └──→ Regenerate sitemap (future)
+
+Posts.beforeDelete ──→ Meilisearch remove
+                     → Redis cache invalidation
+
+Categories.afterChange ──→ Redis cache invalidation
+Tags.afterChange ──→ Redis cache invalidation
+Settings.afterChange ──→ Redis cache invalidation
+</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1.5rem; background: #f0f7ff; padding: 1rem; border-radius: 8px;">
+  <h3>📦 Deployment Structure</h3>
+  <p style="font-size: 0.85rem;">
+    1 VPS → Docker Compose dengan 4 service<br>
+    Nginx/Caddy reverse proxy + SSL (Let's Encrypt)<br>
+    Cloudflare DNS + CDN untuk static assets<br>
+    Backup: PostgreSQL harian + media folder harian + .env
+  </p>
+</div>

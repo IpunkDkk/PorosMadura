@@ -1,0 +1,130 @@
+<h2>🏗️ PorosMadura — Arsitektur Platform</h2>
+<p class="subtitle">Next.js App Router + Payload CMS + PostgreSQL + Redis + Meilisearch</p>
+
+<div class="mockup" style="margin-top: 1.5rem;">
+  <div class="mockup-header">System Architecture MVP</div>
+  <div class="mockup-body" style="text-align: left;">
+    <pre style="font-family: monospace; font-size: 0.75rem; line-height: 1.6; background: transparent; border: none; color: inherit;">
+┌─────────────────────────────────────────────────────┐
+│                   🌐 User / Browser                  │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│              ☁️ Cloudflare DNS / CDN                  │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│           ⚡ Next.js App Router (Public)              │
+│  ┌──────────────────────────────────────────────┐   │
+│  │  Pages: Home | Artikel | Kategori | Tag       │   │
+│  │  Author | Search | Static Pages               │   │
+│  │  SEO: Sitemap | RSS | Robots | JSON-LD       │   │
+│  └──────────────────────────────────────────────┘   │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│            📋 Payload CMS Admin Panel                 │
+│  ┌──────────────────────────────────────────────┐   │
+│  │  Collections: Users | Posts | Categories     │   │
+│  │  Tags | Media | Pages | Redirects | Settings  │   │
+│  │  Workflow: Draft → Review → Published         │   │
+│  └──────────────────────────────────────────────┘   │
+└───────┬──────────────────────────┬──────────────────┘
+        │                          │
+┌───────▼──────────┐   ┌──────────▼─────────────────┐
+│   🗄️ PostgreSQL   │   │  📁 Local Storage (Media)   │
+└───────┬──────────┘   │  → Future: R2/S3           │
+        │              └────────────────────────────┘
+┌───────▼──────────┐
+│   🔍 Meilisearch  │
+│   (Search Index)  │
+└──────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│              ⚡ Redis Cache                          │
+│  Homepage | Kategori | Artikel Populer | View Count │
+└─────────────────────────────────────────────────────┘
+    </pre>
+  </div>
+</div>
+
+<div class="section">
+  <h3>📦 Stack Utama</h3>
+  <div class="cards" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="card" style="cursor: default;">
+      <div class="card-body">
+        <h3>Next.js 15</h3>
+        <p>App Router + Server Components + SSR/SSG</p>
+      </div>
+    </div>
+    <div class="card" style="cursor: default;">
+      <div class="card-body">
+        <h3>Payload CMS 3</h3>
+        <p>Embedded dalam Next.js, Admin Panel auto</p>
+      </div>
+    </div>
+    <div class="card" style="cursor: default;">
+      <div class="card-body">
+        <h3>PostgreSQL</h3>
+        <p>Database utama via Drizzle ORM (Payload native)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>🎨 Brand Identity</h3>
+  <div class="options" style="pointer-events: none; opacity: 0.8;">
+    <div class="option" style="cursor: default;">
+      <div class="content">
+        <h3>Warna Primer</h3>
+        <p><span style="display: inline-block; width: 16px; height: 16px; background: #0C2A51; border-radius: 4px; vertical-align: middle; margin-right: 8px;"></span> #0C2A51 (Navy)</p>
+        <p><span style="display: inline-block; width: 16px; height: 16px; background: #C61E21; border-radius: 4px; vertical-align: middle; margin-right: 8px;"></span> #C61E21 (Red)</p>
+        <p><span style="display: inline-block; width: 16px; height: 16px; background: #F6F6F6; border-radius: 4px; vertical-align: middle; margin-right: 8px;"></span> #F6F6F6 (White)</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default;">
+      <div class="content">
+        <h3>Tipografi</h3>
+        <p><strong>Heading:</strong> Merriweather (serif, terpercaya)</p>
+        <p><strong>Body:</strong> Inter (sans-serif, modern)</p>
+      </div>
+    </div>
+    <div class="option" style="cursor: default;">
+      <div class="content">
+        <h3>Tagline</h3>
+        <p style="font-style: italic; font-size: 1.2rem;">"Berita Tepat, Fakta Kuat"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>📱 Halaman Publik</h3>
+  <div class="cards" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="card" style="cursor: default;">
+      <div class="card-body">
+        <h3>/</h3>
+        <p>Homepage (Hero + Latest + Popular)</p>
+      </div>
+    </div>
+    <div class="card" style="cursor: default;">
+      <div class="card-body">
+        <h3>/[category]/[slug]</h3>
+        <p>Detail Artikel</p>
+      </div>
+    </div>
+    <div class="card" style="cursor: default;">
+      <div class="card-body">
+        <h3>/category/[slug]</h3>
+        <p>Listing Kategori</p>
+      </div>
+    </div>
+    <div class="card" style="cursor: default;">
+      <div class="card-body">
+        <h3>/search?q=</h3>
+        <p>Pencarian (Meilisearch)</p>
+      </div>
+    </div>
+  </div>
+</div>

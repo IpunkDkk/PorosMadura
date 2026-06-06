@@ -1,0 +1,58 @@
+<h2>📋 Pendekatan Implementasi</h2>
+<p class="subtitle">3 opsi pendekatan — pilih yang paling cocok</p>
+
+<div class="options" style="margin-top: 1rem;">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Follow PRD Phases (8 fase)</h3>
+      <p>Setiap fase fokus pada satu deliverable:</p>
+      <small>
+        <strong>P1</strong> Core Setup (Next.js + Payload + Docker + Branding)<br>
+        <strong>P2</strong> Collections (semua data model)<br>
+        <strong>P3</strong> Editorial Workflow (status, role, slug)<br>
+        <strong>P4</strong> Public Website (semua halaman)<br>
+        <strong>P5</strong> SEO (metadata, sitemap, RSS)<br>
+        <strong>P6</strong> Search &amp; Cache (Meilisearch + Redis)<br>
+        <strong>P7</strong> Production Hardening<br>
+        <strong>P8</strong> R2/S3 Migration Ready
+      </small>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Gabung 4-5 Fase Besar</h3>
+      <p>Menggabungkan fase yang saling terkait:</p>
+      <small>
+        <strong>Fase 1:</strong> Foundation (P1+P2) — Setup + Collections + Better Auth<br>
+        <strong>Fase 2:</strong> CMS &amp; Workflow (P3) — Editorial + Roles<br>
+        <strong>Fase 3:</strong> Public Site (P4+P5) — Semua halaman + SEO<br>
+        <strong>Fase 4:</strong> Infrastructure (P6+P7+P8) — Search, Cache, Deploy, R2
+      </small>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Value-First / Working Prototype</h3>
+      <p>Prioritas: bisa publish dan tampil secepat mungkin:</p>
+      <small>
+        <strong>Sprint 1:</strong> Next.js + Payload + Posts + 1 halaman publik (home)<br>
+        <strong>Sprint 2:</strong> Auth + All Collections + Admin workflow<br>
+        <strong>Sprint 3:</strong> All public pages + SEO + Search<br>
+        <strong>Sprint 4:</strong> Cache + Infra + Deploy
+      </small>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; background: #f0f7ff; padding: 1rem; border-radius: 8px;">
+  <p><strong>Rekomendasi saya: Opsi B (4 fase besar)</strong> — karena:</p>
+  <ul style="font-size: 0.9rem; margin-top: 0.5rem;">
+    <li>Better Auth + Payload setup perlu jadi satu kesatuan (Fase 1)</li>
+    <li>SEO tidak bisa dipisah dari halaman publik (Fase 3)</li>
+    <li>Search + Cache + Deploy perlu satu fase untuk testing integrasi (Fase 4)</li>
+    <li>Lebih sedikit context switching antar deliverable</li>
+  </ul>
+</div>

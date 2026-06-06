@@ -1,0 +1,117 @@
+<h2>🗃️ Data Model — Payload Collections</h2>
+<p class="subtitle">9 collections sesuai PRD, dengan relasi lengkap</p>
+
+<div class="mockup" style="margin-top: 1rem;">
+  <div class="mockup-header">Entity Relationship</div>
+  <div class="mockup-body" style="text-align: left; font-size: 0.75rem;">
+<pre>
+Users ──┬──> Authors (link via `user` field)
+        └── createdBy/updatedBy pada Posts, Media, dll
+
+Authors ──> Posts.author (relation hasOne)
+Categories ──> Posts.category (relation hasOne)
+           └── Categories.parent (relation hasOne — self)
+Tags ──> Posts.tags (relation hasMany)
+Media ──> Posts.featuredImage, Posts.ogImage, Authors.avatar, Settings.logo, dll
+
+Posts ──> Redirects (auto-create saat slug berubah)
+Pages ──> Redirects (auto-create saat slug berubah)
+
+Settings — singleton, global config
+Redirects — standalone, no relasi ke collection lain
+</pre>
+  </div>
+</div>
+
+<div class="cards" style="grid-template-columns: repeat(3, 1fr); margin-top: 1.5rem;">
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>👤 Users</h3>
+      <small>Internal auth via Better Auth</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        name, email, role (admin/editor/author/viewer)<br>
+        ⚡ Better Auth handle login session
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>✍️ Authors</h3>
+      <small>Public author profile</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        name, slug, bio, avatar, email, socialLinks<br>
+        Bisa terhubung ke User (opsional)
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>📄 Posts</h3>
+      <small>Core — artikel berita</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        title, slug, excerpt, content (richText), featuredImage<br>
+        category, tags[], author, status (draft→review→published→archived)<br>
+        isFeatured, isBreakingNews, seoTitle, seoDescription<br>
+        ⚡ Slug change → auto redirect 301
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>📂 Categories</h3>
+      <small>Hierarki kategori</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        name, slug, description, parent, order, isActive<br>
+        Nasional, Madura, Politik, Ekonomi, dll
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🏷️ Tags</h3>
+      <small>Tags/label artikel</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        name, slug, description, isActive
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🖼️ Media</h3>
+      <small>Upload gambar</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        file, alt (wajib), caption, credit<br>
+        Image sizes: thumbnail(400x300), card(768x432), hero(1280x720), og(1200x630)
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>📃 Pages</h3>
+      <small>Halaman statis</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        title, slug, content, seoTitle, seoDescription, status
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🔀 Redirects</h3>
+      <small>301/302 manager</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        from, to, statusCode (301/302), isActive<br>
+        Auto-create saat slug berubah
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>⚙️ Settings</h3>
+      <small>Global singleton</small>
+      <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+        siteName, tagline, logo, favicon, defaultOgImage<br>
+        socialLinks, contactEmail, analytics, rss, dll
+      </p>
+    </div>
+  </div>
+</div>

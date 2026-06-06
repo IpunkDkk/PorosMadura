@@ -1,0 +1,110 @@
+<h2>🌐 Public Pages — Lengkap</h2>
+<p class="subtitle">Konversi dari sample design + SEO</p>
+
+<div class="cards" style="grid-template-columns: repeat(2, 1fr); margin-top: 1.5rem;">
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🏠 Homepage (/)</h3>
+      <p style="font-size: 0.85rem;">
+        Header Navy → Logo + Tagline + Search<br>
+        Sticky Category Bar (white) → HOME, TRENDING, categories<br>
+        Breaking News Ticker (red bg)<br>
+        Hero Grid → 1 besar (span 2) + 2 stacked (kanan)<br>
+        Latest News Feed → Horizontal cards (image|content)<br>
+        Sidebar → Terpopuler (big numbers) + Ikuti Kami<br>
+        Footer → Brand + Kategori + Perusahaan + Kontak
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>📄 Detail Artikel (/[cat]/[slug])</h3>
+      <p style="font-size: 0.85rem;">
+      Breadcrumb → category / title<br>
+      Featured image + caption + credit<br>
+      Title (Merriweather) + Excerpt<br>
+      Author + Published date + Updated date<br>
+      Rich text content<br>
+      Tags, Share buttons (WhatsApp, Facebook, Twitter)<br>
+      Related posts + Popular posts sidebar<br>
+      JSON-LD NewsArticle + OG metadata
+    </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>📂 Kategori (/category/[slug])</h3>
+      <p style="font-size: 0.85rem;">
+        Nama + deskripsi kategori<br>
+        Grid/list artikel with pagination<br>
+        Sidebar popular posts<br>
+        SEO metadata per kategori
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🏷️ Tag (/tag/[slug])</h3>
+      <p style="font-size: 0.85rem;">
+        Nama + deskripsi tag<br>
+        Artikel terkait with pagination<br>
+        SEO metadata
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>✍️ Author (/author/[slug])</h3>
+      <p style="font-size: 0.85rem;">
+        Profile: avatar, bio, social links<br>
+        List artikel by author<br>
+        Pagination
+      </p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>🔍 Search (/search?q=)</h3>
+      <p style="font-size: 0.85rem;">
+        Search input + results<br>
+        Filter kategori<br>
+        Powered by Meilisearch<br>
+        Hasil: title, excerpt, category, thumbnail, date
+      </p>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top: 2rem;">📡 SEO System</h3>
+<div class="mockup">
+  <div class="mockup-header">SEO Features</div>
+  <div class="mockup-body" style="text-align: left; font-size: 0.8rem;">
+<pre>
+Per Artikel:
+├── Dynamic metadata (generateMetadata)
+├── Open Graph (title, description, image)
+├── Twitter Card
+├── Canonical URL
+├── JSON-LD NewsArticle schema
+└── allowIndex (robots meta)
+
+Global:
+├── /sitemap.xml          → all published posts, categories, tags, authors, pages
+├── /news-sitemap.xml     → published posts (Google News)
+├── /rss.xml              → latest published posts
+├── /robots.txt           → disallow /admin, /api
+└── Breadcrumb structured data (JSON-LD BreadcrumbList)
+</pre>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1.5rem; background: #f0f7ff; padding: 1rem; border-radius: 8px;">
+  <h3>📐 Server Components Strategy</h3>
+  <p style="font-size: 0.85rem;">
+    ✅ Semua halaman publik pakai <strong>Server Components</strong> — fetch data langsung dari Payload REST API<br>
+    ✅ <strong>generateMetadata</strong> untuk SEO dinamis per halaman<br>
+    ✅ Client components hanya untuk interaksi: search input, mobile menu, share buttons<br>
+    ✅ <strong>ISR</strong> (Incremental Static Regeneration) atau <strong>SSR with cache</strong> untuk homepage & listing<br>
+    ✅ Data fetching via <strong>fetch dengan cache: 'force-cache'</strong> + Redis cache layer nanti
+  </p>
+</div>

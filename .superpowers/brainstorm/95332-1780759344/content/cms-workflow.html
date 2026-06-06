@@ -1,0 +1,88 @@
+<h2>🔄 CMS Workflow & Role System</h2>
+<p class="subtitle">Editorial flow + permission per role</p>
+
+<div class="mockup" style="margin-top: 1rem;">
+  <div class="mockup-header">Editorial Workflow</div>
+  <div class="mockup-body" style="text-align: left;">
+<pre style="font-size: 0.8rem;">
+Author buat artikel (draft)
+       │
+       ▼
+Author submit ke review
+       │
+       ▼
+Editor review ──┬──→ Return to Draft (dengan catatan)
+                │
+                ▼
+         Editor Publish / Schedule
+                │
+                ├──→ Published → Public Website
+                │       │
+                │       ├── Sitemap
+                │       ├── News Sitemap
+                │       ├── RSS Feed
+                │       ├── Meilisearch Index
+                │       └── Cache Invalidation
+                │
+                └──→ Scheduled → Otomatis publish di scheduledAt
+</pre>
+  </div>
+</div>
+
+<div class="cards" style="grid-template-columns: repeat(2, 1fr); margin-top: 1.5rem;">
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>👑 Admin</h3>
+      <p style="font-size: 0.85rem;">Full access — manage users, roles, all content, settings, clear cache, reindex search</p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>✏️ Editor</h3>
+      <p style="font-size: 0.85rem;">Create/edit all articles, review, publish/schedule/archive, set featured & breaking news, manage categories/tags</p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>📝 Author</h3>
+      <p style="font-size: 0.85rem;">Create own articles, edit own draft, upload media, submit to review. Cannot publish directly.</p>
+    </div>
+  </div>
+  <div class="card" style="cursor: default;">
+    <div class="card-body">
+      <h3>👀 Viewer</h3>
+      <p style="font-size: 0.85rem;">Read-only — view all data, no create/edit/delete</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <h3>⚡ Slug & Redirect System</h3>
+  <div class="options" style="pointer-events: none; opacity: 0.8;">
+    <div class="option" style="cursor: default;">
+      <div class="content">
+        <p><strong>Slug auto-generate</strong> dari title, bisa diedit manual</p>
+        <p><strong>Unique validation</strong> — tidak boleh ada slug duplicate</p>
+        <p><strong>Redirect 301 otomatis</strong> saat slug post atau category berubah via Payload hook</p>
+        <p><strong>Format:</strong> /[categorySlug]/[postSlug]</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1rem;">
+  <h3>🔐 Better Auth + Payload Admin</h3>
+  <div class="mockup" style="margin-top: 0.5rem;">
+    <div class="mockup-header">Login Flow</div>
+    <div class="mockup-body" style="font-size: 0.8rem;">
+<pre>
+User buka /admin
+  → Custom login page (brand PorosMadura, logo navy)
+  → Better Auth: email + password
+  → Validate credentials & buat session
+  → Redirect ke Payload Admin Panel (/admin)
+  → Better Auth session → Payload access control
+</pre>
+    </div>
+  </div>
+</div>
