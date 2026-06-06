@@ -3,6 +3,8 @@ import { Inter, Merriweather } from 'next/font/google'
 import '@/css/globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import { getSiteSettings } from '@/lib/payload'
+import { getSettingsOgImage, normalizeSettings } from '@/lib/cms'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -17,25 +19,34 @@ const merriweather = Merriweather({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: 'PorosMadura - Berita Tepat, Fakta Kuat',
-    template: '%s | PorosMadura',
-  },
-  description:
-    'Platform berita digital terpercaya yang menyajikan informasi secara cepat, akurat, dan kredibel untuk masyarakat Madura dan Nusantara.',
-  openGraph: {
-    title: 'PorosMadura',
-    description:
-      'Berita Tepat, Fakta Kuat - Platform berita digital terpercaya untuk masyarakat Madura dan Nusantara.',
-    siteName: 'PorosMadura',
-    locale: 'id_ID',
-    type: 'website',
-  },
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-icon.png',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = normalizeSettings(await getSiteSettings())
+  const image = getSettingsOgImage(settings)
+
+  return {
+    title: {
+      default: `${settings.siteName} - ${settings.tagline}`,
+      template: `%s | ${settings.siteName}`,
+    },
+    description: settings.siteDescription,
+    metadataBase: new URL(settings.siteUrl),
+    openGraph: {
+      title: settings.siteName,
+      description: settings.siteDescription,
+      siteName: settings.siteName,
+      locale: 'id_ID',
+      type: 'website',
+      images: [{ url: image }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [image],
+    },
+    icons: {
+      icon: '/favicon.ico',
+      apple: '/apple-icon.png',
+    },
+  }
 }
 
 export default function PublicLayout({

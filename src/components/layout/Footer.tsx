@@ -1,42 +1,39 @@
 import Link from 'next/link'
+import { getActiveCategories, getSiteSettings } from '@/lib/payload'
+import { normalizeCategory, normalizeSettings, type PublicCategory } from '@/lib/cms'
 
-const categories = [
-  { name: 'Nasional', slug: 'nasional' },
-  { name: 'Madura', slug: 'madura' },
-  { name: 'Politik', slug: 'politik' },
-  { name: 'Ekonomi', slug: 'ekonomi' },
-  { name: 'Olahraga', slug: 'olahraga' },
-  { name: 'Teknologi', slug: 'teknologi' },
-  { name: 'Lifestyle', slug: 'lifestyle' },
-  { name: 'Budaya', slug: 'budaya' },
-  { name: 'Viral', slug: 'viral' },
-]
+export default async function Footer() {
+  const [categoriesResult, settingsResult] = await Promise.all([
+    getActiveCategories(),
+    getSiteSettings(),
+  ])
+  const categories = categoriesResult.docs
+    .map(normalizeCategory)
+    .filter((category): category is PublicCategory => Boolean(category))
+    .slice(0, 9)
+  const settings = normalizeSettings(settingsResult)
 
-export default function Footer() {
   return (
     <footer className="bg-white border-t border-border-light pt-16 pb-8 mt-12">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-          {/* Column 1: Brand */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-1 mb-4">
               <span className="bg-poros-red text-white font-heading font-bold text-3xl w-10 h-10 flex items-center justify-center rounded-lg">
-                P
+                {settings.siteName.charAt(0)}
               </span>
               <span className="font-heading font-black text-3xl tracking-tight text-poros-navy">
-                Poros<span className="text-poros-red">Madura</span>
+                {settings.siteName}
               </span>
             </Link>
             <p className="text-sm text-gray-500 mb-4 font-heading italic font-medium">
-              &ldquo;Berita Tepat, Fakta Kuat&rdquo;
+              &ldquo;{settings.tagline}&rdquo;
             </p>
             <p className="text-sm text-gray-600 leading-relaxed font-medium">
-              Platform berita digital terpercaya yang menyajikan informasi secara
-              cepat, akurat, dan kredibel untuk masyarakat Madura dan Nusantara.
+              {settings.siteDescription}
             </p>
           </div>
 
-          {/* Column 2: Kategori */}
           <div>
             <h4 className="font-black text-poros-navy text-lg mb-5 font-heading">
               Kategori Utama
@@ -44,10 +41,7 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-gray-600 font-semibold">
               {categories.map((cat) => (
                 <li key={cat.slug}>
-                  <Link
-                    href={`/category/${cat.slug}`}
-                    className="hover:text-poros-red transition-colors"
-                  >
+                  <Link href={`/category/${cat.slug}`} className="hover:text-poros-red transition-colors">
                     {cat.name}
                   </Link>
                 </li>
@@ -55,67 +49,34 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Perusahaan */}
           <div>
             <h4 className="font-black text-poros-navy text-lg mb-5 font-heading">
               Perusahaan
             </h4>
             <ul className="space-y-3 text-sm text-gray-600 font-semibold">
-              <li>
-                <Link
-                  href="/tentang-kami"
-                  className="hover:text-poros-red transition-colors"
-                >
-                  Tentang Kami
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/redaksi"
-                  className="hover:text-poros-red transition-colors"
-                >
-                  Susunan Redaksi
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/pedoman-media-siber"
-                  className="hover:text-poros-red transition-colors"
-                >
-                  Pedoman Media Siber
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/disclaimer"
-                  className="hover:text-poros-red transition-colors"
-                >
-                  Disclaimer
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/privacy-policy"
-                  className="hover:text-poros-red transition-colors"
-                >
-                  Kebijakan Privasi
-                </Link>
-              </li>
+              {[
+                ['Tentang Kami', '/tentang-kami'],
+                ['Susunan Redaksi', '/redaksi'],
+                ['Pedoman Media Siber', '/pedoman-media-siber'],
+                ['Disclaimer', '/disclaimer'],
+                ['Kebijakan Privasi', '/privacy-policy'],
+              ].map(([label, href]) => (
+                <li key={href}>
+                  <Link href={href} className="hover:text-poros-red transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 4: Kontak */}
           <div>
             <h4 className="font-black text-poros-navy text-lg mb-5 font-heading">
               Hubungi Kami
             </h4>
             <ul className="space-y-3 text-sm text-gray-600 font-medium">
               <li>
-                <span className="font-bold">Email:</span>{' '}
-                redaksi@porosmadura.com
-              </li>
-              <li>
-                <span className="font-bold">Telepon:</span> (0324) 123456
+                <span className="font-bold">Email:</span> {settings.contactEmail}
               </li>
               <li className="mt-6 pt-6 border-t border-border-light">
                 <Link
@@ -129,10 +90,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Footer */}
         <div className="pt-8 border-t border-border-light text-center flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-gray-500 font-medium">
-            &copy; {new Date().getFullYear()} PorosMadura. Hak Cipta Dilindungi.
+            &copy; {new Date().getFullYear()} {settings.siteName}. Hak Cipta Dilindungi.
           </p>
           <div className="flex gap-6 text-sm font-bold text-gray-400">
             <Link href="/syarat-ketentuan" className="hover:text-poros-navy">

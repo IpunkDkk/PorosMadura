@@ -8,7 +8,7 @@ interface ArticleCardProps {
   excerpt: string
   featuredImage?: unknown
   category?: { slug: string; name: string } | null
-  author?: { name: string; slug: string } | null
+  author?: { name: string; slug?: string } | null
   publishedAt: string
 }
 

@@ -44,7 +44,13 @@ export async function getPostBySlug(categorySlug: string, postSlug: string) {
     },
     depth: 2,
   })
-  return result.docs[0] || null
+  const post = result.docs[0] as Record<string, unknown> | undefined
+  if (!post) return null
+
+  const category = post.category as Record<string, unknown> | undefined
+  if (categorySlug && category?.slug && category.slug !== categorySlug) return null
+
+  return post
 }
 
 export async function getCategoryBySlug(slug: string) {
@@ -85,4 +91,48 @@ export async function getPageBySlug(slug: string) {
     where: { slug: { equals: slug }, status: { equals: 'published' } },
   })
   return result.docs[0] || null
+}
+
+export async function getActiveCategories() {
+  const payload = await getPayloadClient()
+  return payload.find({
+    collection: 'categories',
+    limit: 100,
+    sort: 'order',
+    where: { isActive: { equals: true } },
+  })
+}
+
+export async function getSiteSettings() {
+  const payload = await getPayloadClient()
+  return payload.findGlobal({
+    slug: 'settings',
+    depth: 1,
+  })
+}
+
+export async function searchPublishedPostsFallback(args: {
+  query: string
+  category?: string
+  page?: number
+  limit?: number
+}) {
+  const where: Record<string, unknown> = {
+    or: [
+      { title: { like: args.query } },
+      { excerpt: { like: args.query } },
+    ],
+  }
+
+  if (args.category) {
+    const category = await getCategoryBySlug(args.category)
+    if (!category) return { docs: [], totalDocs: 0, page: args.page || 1, totalPages: 0, limit: args.limit || 10 }
+    where.category = { equals: (category as Record<string, unknown>).id }
+  }
+
+  return getPublishedPosts({
+    limit: args.limit || 10,
+    page: args.page || 1,
+    where,
+  })
 }

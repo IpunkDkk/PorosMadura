@@ -5,6 +5,7 @@ import { HeroNews } from '@/components/article/HeroNews'
 import { ArticleCard } from '@/components/article/ArticleCard'
 import { PopularPosts } from '@/components/sidebar/PopularPosts'
 import { SocialFollow } from '@/components/sidebar/SocialFollow'
+import { normalizePost } from '@/lib/cms'
 
 export const dynamic = 'force-static'
 export const revalidate = 300
@@ -31,12 +32,10 @@ export default async function HomePage() {
       }),
     ])
 
-  const featuredPosts = featuredResult.docs as unknown as HomePagePost[]
-  const latestPosts = latestResult.docs as unknown as HomePagePost[]
-  const popularPosts = popularResult.docs as unknown as HomePagePost[]
-  const breakingPost = breakingResult.docs[0] as
-    | HomePagePost
-    | undefined
+  const featuredPosts = featuredResult.docs.map(normalizePost)
+  const latestPosts = latestResult.docs.map(normalizePost)
+  const popularPosts = popularResult.docs.map(normalizePost)
+  const breakingPost = breakingResult.docs[0] ? normalizePost(breakingResult.docs[0]) : undefined
 
   return (
     <>
@@ -88,18 +87,4 @@ export default async function HomePage() {
       </div>
     </>
   )
-}
-
-interface HomePagePost {
-  id: number | string
-  title: string
-  slug: string
-  excerpt: string
-  featuredImage?: unknown
-  category?: { slug: string; name: string } | null
-  author?: { name: string; slug: string } | null
-  publishedAt: string
-  isFeatured: boolean
-  isBreakingNews: boolean
-  views: number
 }

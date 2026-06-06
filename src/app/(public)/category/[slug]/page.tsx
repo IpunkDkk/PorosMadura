@@ -2,6 +2,7 @@ import { getCategoryBySlug, getPublishedPosts } from '@/lib/payload'
 import { ArticleCard } from '@/components/article/ArticleCard'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { normalizePost } from '@/lib/cms'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -26,7 +27,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   if (!category) notFound()
 
   const cat = category as Record<string, unknown>
-  const pageNum = parseInt(page || '1')
+  const pageNum = Math.max(1, parseInt(page || '1', 10) || 1)
   const result = await getPublishedPosts({
     limit: 10,
     page: pageNum,
@@ -44,16 +45,16 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         <p className="text-gray-600 mb-8">{catDescription}</p>
       )}
       <div className="flex flex-col gap-6">
-        {(result.docs as Array<Record<string, unknown>>).map((post) => (
+        {result.docs.map(normalizePost).map((post) => (
           <ArticleCard
-            key={post.id as string}
-            title={post.title as string}
-            slug={post.slug as string}
-            excerpt={post.excerpt as string}
+            key={post.id}
+            title={post.title}
+            slug={post.slug}
+            excerpt={post.excerpt}
             featuredImage={post.featuredImage}
-            category={post.category as { slug: string; name: string } | null | undefined}
-            author={post.author as { name: string; slug: string } | null | undefined}
-            publishedAt={post.publishedAt as string}
+            category={post.category}
+            author={post.author}
+            publishedAt={post.publishedAt}
           />
         ))}
       </div>
