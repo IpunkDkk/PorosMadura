@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getActiveCategories, getSiteSettings } from '@/lib/payload'
 import { normalizeCategory, normalizeSettings, type PublicCategory } from '@/lib/cms'
+import { getMediaUrl } from '@/lib/media'
 
 export default async function Footer() {
   const [categoriesResult, settingsResult] = await Promise.all([
@@ -18,10 +19,15 @@ export default async function Footer() {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-1 mb-4">
-              <span className="bg-poros-red text-white font-heading font-bold text-3xl w-10 h-10 flex items-center justify-center rounded-lg">
-                {settings.siteName.charAt(0)}
-              </span>
+            <Link href="/" className="flex items-center gap-3 mb-4">
+              <img
+                src={settings.logo
+                  ? getMediaUrl(settings.logo as Record<string, unknown>)
+                  : '/logo.png'
+                }
+                alt={settings.siteName}
+                className="h-10 w-auto object-contain"
+              />
               <span className="font-heading font-black text-3xl tracking-tight text-poros-navy">
                 {settings.siteName}
               </span>

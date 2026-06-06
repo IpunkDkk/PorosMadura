@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Menu, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import type { PublicCategory, PublicSettings } from '@/lib/cms'
+import { getMediaUrl } from '@/lib/media'
 
 interface HeaderClientProps {
   categories: PublicCategory[]
@@ -26,10 +27,15 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex flex-col">
-              <Link href="/" className="flex items-center gap-1 group">
-                <span className="bg-poros-red text-white font-heading font-bold text-2xl w-8 h-8 flex items-center justify-center rounded">
-                  {settings.siteName.charAt(0)}
-                </span>
+              <Link href="/" className="flex items-center gap-2 group">
+                <img
+                  src={settings.logo
+                    ? getMediaUrl(settings.logo as Record<string, unknown>)
+                    : '/logo-putih.png'
+                  }
+                  alt={settings.siteName}
+                  className="h-10 w-auto object-contain"
+                />
                 <h1 className="font-heading font-black text-2xl tracking-tight">
                   {settings.siteName}
                 </h1>

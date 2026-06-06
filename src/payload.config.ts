@@ -56,6 +56,16 @@ export default buildConfig({
   typescript: {
     autoGenerate: false,
   },
-  cors: [process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'],
-  csrf: [process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'],
+  cors: [
+    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    ...(process.env.CORS_EXTRA_ORIGINS
+      ? process.env.CORS_EXTRA_ORIGINS.split(',').map((s) => s.trim())
+      : []),
+  ],
+  csrf: [
+    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    ...(process.env.CORS_EXTRA_ORIGINS
+      ? process.env.CORS_EXTRA_ORIGINS.split(',').map((s) => s.trim())
+      : []),
+  ],
 })

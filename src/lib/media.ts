@@ -12,7 +12,19 @@ export function getMediaUrl(media: Record<string, unknown> | string | null | und
         : null
 
   if (!filename) return '/og-image.jpg'
-  if (filename.startsWith('http://') || filename.startsWith('https://')) return filename
+  if (filename.startsWith('http://') || filename.startsWith('https://')) {
+    try {
+      const url = new URL(filename)
+      // Jika URL absolut mengarah ke localhost, ubah jadi relative
+      // supaya tetap berfungsi di domain manapun (ngrok, production, dll)
+      if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+        return url.pathname + url.search
+      }
+    } catch {
+      /* ignore invalid URL */
+    }
+    return filename
+  }
 
   return `${baseUrl}/${filename.replace(/^\//, '')}`
 }
