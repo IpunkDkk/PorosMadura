@@ -1,6 +1,8 @@
 import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
 
-export const syncPostToSearch: CollectionAfterChangeHook = async ({ doc, operation }) => {
+export const syncPostToSearch: CollectionAfterChangeHook = async ({ context, doc, operation }) => {
+  if (context?.skipSearchSync) return doc
+
   const d = doc as Record<string, unknown>
   const shouldIndex = d.status === 'published' &&
     d.publishedAt &&
@@ -17,7 +19,9 @@ export const syncPostToSearch: CollectionAfterChangeHook = async ({ doc, operati
   return doc
 }
 
-export const removePostFromSearch: CollectionAfterDeleteHook = async ({ doc }) => {
+export const removePostFromSearch: CollectionAfterDeleteHook = async ({ context, doc }) => {
+  if (context?.skipSearchSync) return doc
+
   const { removePostFromIndex } = await import('@/lib/search')
   await removePostFromIndex((doc as Record<string, unknown>).id as string)
 }
