@@ -1,0 +1,39 @@
+@layer payload-default {
+  :root {
+    --theme-elevation-0: #FFFFFF;
+    --theme-elevation-50: #F9FAFB;
+    --theme-elevation-100: #F3F4F6;
+    --theme-elevation-150: #E5E7EB;
+    --theme-elevation-200: #D1D5DB;
+    --theme-elevation-250: #9CA3AF;
+    --theme-elevation-300: #6B7280;
+    --theme-elevation-400: #4B5563;
+    --theme-elevation-500: #374151;
+    --theme-elevation-600: #1F2937;
+    --theme-elevation-700: #111827;
+    --theme-elevation-800: #0C2A51;
+    --theme-elevation-900: #0C2A51;
+    --theme-elevation-950: #071B36;
+    --theme-bg-color: #F9FAFB;
+    --theme-text: #111827;
+    --theme-input-bg: #FFFFFF;
+    --theme-border-color: #E5E7EB;
+    --theme-error-500: #C61E21;
+    --theme-error-400: #CF5D61;
+    --theme-error-50: #FEF2F2;
+    --theme-warning-500: #F59E0B;
+    --theme-success-500: #10B981;
+  }
+
+  .btn--style-primary, .btn--style-primary-light {
+    background: #C61E21 !important;
+    border-color: #C61E21 !important;
+  }
+  .btn--style-primary:hover {
+    background: #A81A1D !important;
+  }
+
+  a:not(.btn):hover {
+    color: #C61E21 !important;
+  }
+}
