@@ -1,0 +1,120 @@
+import { User, Clock } from 'lucide-react'
+import Link from 'next/link'
+import { getImageSizeUrl } from '@/lib/media'
+
+export function formatRelativeTime(dateString: string): string {
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffMs = now.getTime() - date.getTime()
+  const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMinutes < 1) return 'Baru saja'
+  if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`
+  if (diffHours < 24) return `${diffHours} jam yang lalu`
+  if (diffDays < 7) return `${diffDays} hari yang lalu`
+
+  return date.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+interface HeroPost {
+  title: string
+  slug: string
+  featuredImage?: unknown
+  category?: { slug: string; name: string } | null
+  author?: { name: string; slug: string } | null
+  publishedAt: string
+}
+
+interface HeroNewsProps {
+  featured: HeroPost[]
+}
+
+export function HeroNews({ featured }: HeroNewsProps) {
+  if (!featured || featured.length === 0) return null
+
+  const main = featured[0]
+  const subHeroes = featured.slice(1, 3)
+
+  return (
+    <section className="mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Main Hero (Left - Span 2) */}
+        <Link
+          href={`/${main.category?.slug ?? 'uncategorized'}/${main.slug}`}
+          className="lg:col-span-2 relative group cursor-pointer overflow-hidden rounded-2xl bg-black"
+        >
+          <div className="aspect-[4/3] lg:aspect-[16/9] relative">
+            <img
+              src={getImageSizeUrl(main.featuredImage as Record<string, unknown> | null | undefined, 'hero')}
+              alt={main.title}
+              className="object-cover w-full h-full opacity-80 group-hover:scale-105 transition-transform duration-700 group-hover:opacity-100"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+          </div>
+          <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 text-white z-10">
+            {main.category?.name && (
+              <span className="bg-poros-red text-white text-xs font-bold uppercase px-3 py-1 rounded mb-3 inline-block">
+                {main.category.name}
+              </span>
+            )}
+            <h2 className="font-heading text-2xl md:text-4xl font-bold leading-tight mb-3 drop-shadow-md">
+              {main.title}
+            </h2>
+            <div className="flex items-center text-gray-200 text-xs md:text-sm gap-4 font-medium">
+              {main.author?.name && (
+                <span className="flex items-center gap-1.5">
+                  <User size={14} /> {main.author.name}
+                </span>
+              )}
+              {main.publishedAt && (
+                <span className="flex items-center gap-1.5">
+                  <Clock size={14} /> {formatRelativeTime(main.publishedAt)}
+                </span>
+              )}
+            </div>
+          </div>
+        </Link>
+
+        {/* Sub Heroes (Right - Stacked 2) */}
+        {subHeroes.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+            {subHeroes.map((news) => (
+              <Link
+                key={news.slug}
+                href={`/${news.category?.slug ?? 'uncategorized'}/${news.slug}`}
+                className="relative group cursor-pointer overflow-hidden rounded-2xl bg-black h-full sm:aspect-[4/3] lg:aspect-auto"
+              >
+                <div className="absolute inset-0 h-full w-full">
+                  <img
+                    src={getImageSizeUrl(news.featuredImage as Record<string, unknown> | null | undefined, 'card')}
+                    alt={news.title}
+                    className="object-cover w-full h-full opacity-80 group-hover:scale-105 transition-transform duration-700 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                </div>
+                <div className="absolute bottom-0 left-0 w-full p-5 text-white z-10">
+                  {news.category?.name && (
+                    <span className="bg-poros-navy text-white text-[10px] font-bold uppercase px-2 py-1 rounded mb-2 inline-block">
+                      {news.category.name}
+                    </span>
+                  )}
+                  <h2 className="font-heading text-lg md:text-xl font-bold leading-snug drop-shadow-md line-clamp-3">
+                    {news.title}
+                  </h2>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
