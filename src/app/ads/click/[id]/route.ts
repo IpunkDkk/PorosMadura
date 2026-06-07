@@ -33,7 +33,7 @@ export async function GET(
     await payload.create({
       collection: 'ad-events',
       data: {
-        ad: id,
+        ad: Number(id),
         eventType: 'click',
         placement: typeof adRecord.placement === 'object' && adRecord.placement ? String((adRecord.placement as Record<string, unknown>).placement || '') : '',
         pageUrl: '',

@@ -34,7 +34,7 @@ export async function POST(
     await payload.create({
       collection: 'ad-events',
       data: {
-        ad: id,
+        ad: Number(id),
         eventType: 'impression',
         placement: body.placement || (typeof adRecord.placement === 'object' && adRecord.placement ? String((adRecord.placement as Record<string, unknown>).placement || '') : ''),
         pageUrl: body.pageUrl || '',
@@ -43,7 +43,8 @@ export async function POST(
     })
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (err) {
+    console.error('Impression error:', err)
     return NextResponse.json({ error: 'Gagal mencatat impression' }, { status: 500 })
   }
 }
