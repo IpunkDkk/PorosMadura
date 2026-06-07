@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Menu, Search, X } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { PublicCategory, PublicSettings } from '@/lib/cms'
 import { getMediaUrl } from '@/lib/media'
 
@@ -13,6 +14,9 @@ interface HeaderClientProps {
 
 export default function HeaderClient({ categories, settings }: HeaderClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  const isActiveCategory = (slug: string) => pathname === `/category/${slug}`
 
   const today = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -51,12 +55,7 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
               <Link className="hover:text-poros-red transition-colors" aria-label="Cari" href="/search">
                 <Search size={20} />
               </Link>
-              <Link
-                href="/login"
-                className="bg-poros-red hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-              >
-                Login / Daftar
-              </Link>
+              {/* Login/Daftar di-hide sementara sampai fitur siap */}
             </div>
 
             <div className="lg:hidden flex items-center gap-4">
@@ -85,7 +84,11 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
-                className="text-sm font-semibold text-gray-600 hover:text-poros-red transition-colors whitespace-nowrap"
+                className={`text-sm font-semibold whitespace-nowrap transition-colors ${
+                  isActiveCategory(cat.slug)
+                    ? 'text-poros-red'
+                    : 'text-gray-600 hover:text-poros-red'
+                }`}
               >
                 {cat.name.toUpperCase()}
               </Link>
@@ -97,18 +100,16 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 top-[120px] bg-white z-50 overflow-y-auto border-t border-border-light p-4 shadow-xl">
           <nav className="flex flex-col gap-4">
-            <Link
-              href="/login"
-              className="bg-poros-navy text-white py-3 rounded-xl font-bold w-full text-center mb-2"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Login / Daftar
-            </Link>
+            {/* Login/Daftar di-hide sementara */}
             {categories.map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
-                className="py-2 border-b border-border-light text-base font-bold text-gray-800 hover:text-poros-red"
+                className={`py-2 border-b border-border-light text-base font-bold transition-colors ${
+                  isActiveCategory(cat.slug)
+                    ? 'text-poros-red'
+                    : 'text-gray-800 hover:text-poros-red'
+                }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {cat.name}
