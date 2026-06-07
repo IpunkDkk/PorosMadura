@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Calendar, Clock, User } from 'lucide-react'
-import { getPageBySlug, getPostBySlug } from '@/lib/payload'
+import { getPageBySlug, getPostBySlug, getPublishedPosts } from '@/lib/payload'
 import { getImageSizeUrl } from '@/lib/media'
-import { asRecord, renderRichText } from '@/lib/cms'
+import { asRecord, renderRichText, normalizePost } from '@/lib/cms'
 import AdSlot from '@/components/ads/AdSlot'
+import { SocialFollow } from '@/components/sidebar/SocialFollow'
+import { PopularPosts } from '@/components/sidebar/PopularPosts'
 
 interface Props {
   params: Promise<{ segments?: string[] }>
@@ -12,6 +14,16 @@ interface Props {
 
 function getSegments(params: { segments?: string[] }) {
   return params.segments || []
+}
+
+function splitHtmlAtMiddle(html: string): [string, string] {
+  // Split konten HTML di tengah, pada batas paragraf
+  const half = Math.floor(html.length / 2)
+  const before = html.lastIndexOf('</p>', half)
+  const after = html.indexOf('<p>', half)
+  const splitAt = before > 0 && (after < 0 || half - before < after - half) ? before + 4 : after
+  if (splitAt < 0) return [html, '']
+  return [html.slice(0, splitAt), html.slice(splitAt)]
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -113,6 +125,7 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
   const authorData = asRecord(postData.author)
   const tagsData = Array.isArray(postData.tags) ? postData.tags.map(asRecord) : []
   const contentHtml = await renderRichText(postData.content)
+  const contentParts = splitHtmlAtMiddle(contentHtml)
 
   const categoryName = String(categoryData.name || '')
   const categorySlug = String(categoryData.slug || '')
@@ -120,6 +133,11 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
   const authorSlug = authorData.slug ? String(authorData.slug) : ''
   const publishedAt = postData.publishedAt ? String(postData.publishedAt) : ''
   const readingTime = typeof postData.readingTime === 'number' ? postData.readingTime : null
+
+  const [popularResult] = await Promise.all([
+    getPublishedPosts({ limit: 5, sort: '-views' }),
+  ])
+  const popularPosts = popularResult.docs.map(normalizePost)
 
   return (
     <div className="container mx-auto px-4 lg:px-8 py-8 max-w-6xl">
@@ -153,7 +171,8 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
         }}
       />
 
-      <article className="max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <article className="lg:col-span-8">
         <h1 className="font-heading text-3xl md:text-5xl font-black text-gray-900 leading-tight mb-4">
           {String(postData.title || '')}
         </h1>
@@ -194,9 +213,17 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
 
         <AdSlot placement="article_top" className="my-6" />
 
-        <div className="prose prose-lg prose-headings:font-heading max-w-none mb-8 leading-relaxed">
-          <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+        <div className="prose prose-lg prose-headings:font-heading max-w-none leading-relaxed">
+          <div dangerouslySetInnerHTML={{ __html: contentParts[0] }} />
         </div>
+
+        <AdSlot placement="article_middle" className="my-6" />
+
+        {contentParts[1] && (
+          <div className="prose prose-lg prose-headings:font-heading max-w-none mb-8 leading-relaxed">
+            <div dangerouslySetInnerHTML={{ __html: contentParts[1] }} />
+          </div>
+        )}
 
         <AdSlot placement="article_bottom" className="my-6" />
 
@@ -216,6 +243,13 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
           </div>
         )}
       </article>
+
+        <aside className="lg:col-span-4 space-y-10">
+          <AdSlot placement="article_sidebar" />
+          <PopularPosts posts={popularPosts} />
+          <SocialFollow />
+        </aside>
+      </div>
     </div>
   )
 }

@@ -67,7 +67,24 @@ export default async function HomePage() {
             </div>
 
             <div className="flex flex-col gap-6">
-              {latestPosts.map((post) => (
+              {latestPosts.slice(0, 2).map((post) => (
+                <ArticleCard
+                  key={post.id}
+                  title={post.title}
+                  slug={post.slug}
+                  excerpt={post.excerpt}
+                  featuredImage={post.featuredImage}
+                  category={post.category}
+                  author={post.author}
+                  publishedAt={post.publishedAt}
+                />
+              ))}
+            </div>
+
+            <AdSlot placement="home_middle_banner" className="my-6" />
+
+            <div className="flex flex-col gap-6">
+              {latestPosts.slice(2).map((post) => (
                 <ArticleCard
                   key={post.id}
                   title={post.title}

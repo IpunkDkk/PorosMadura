@@ -3,6 +3,8 @@ import { Inter, Merriweather } from 'next/font/google'
 import '@/css/globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import MobileStickyAd from '@/components/ads/MobileStickyAd'
+import PopupCampaign from '@/components/ads/PopupCampaign'
 import { getSiteSettings } from '@/lib/payload'
 import { getSettingsOgImage, normalizeSettings } from '@/lib/cms'
 
@@ -63,6 +65,8 @@ export default function PublicLayout({
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <MobileStickyAd />
+        <PopupCampaign />
       </body>
     </html>
   )
