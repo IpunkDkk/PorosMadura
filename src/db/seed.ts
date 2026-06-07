@@ -351,6 +351,41 @@ async function seed() {
     console.log(`Created post: ${slug}`)
   }
 
+  // Seed default ad slots
+  const defaultSlots = [
+    { placement: 'home_top_banner', label: 'Homepage Top Banner', description: 'Banner besar di bagian atas homepage' },
+    { placement: 'home_middle_banner', label: 'Homepage Middle Banner', description: 'Banner di tengah daftar berita' },
+    { placement: 'home_sidebar_top', label: 'Homepage Sidebar Top', description: 'Sidebar kanan/kiri bagian atas' },
+    { placement: 'home_sidebar_bottom', label: 'Homepage Sidebar Bottom', description: 'Sidebar kanan/kiri bagian bawah' },
+    { placement: 'article_top', label: 'Article Top', description: 'Di bawah judul/gambar utama artikel' },
+    { placement: 'article_middle', label: 'Article Middle', description: 'Di tengah isi artikel' },
+    { placement: 'article_bottom', label: 'Article Bottom', description: 'Setelah isi artikel' },
+    { placement: 'article_sidebar', label: 'Article Sidebar', description: 'Sidebar artikel' },
+    { placement: 'category_top', label: 'Category Top', description: 'Banner atas halaman kategori' },
+    { placement: 'category_sidebar', label: 'Category Sidebar', description: 'Sidebar halaman kategori' },
+    { placement: 'mobile_sticky_bottom', label: 'Mobile Sticky Bottom', description: 'Iklan sticky bawah di mobile' },
+    { placement: 'mobile_article_middle', label: 'Mobile Article Middle', description: 'Iklan tengah artikel versi mobile' },
+    { placement: 'popup_campaign', label: 'Popup Campaign', description: 'Popup promosi/campaign' },
+  ]
+
+  for (const slot of defaultSlots) {
+    const existing = await payload.find({
+      collection: 'ad-slots',
+      limit: 1,
+      overrideAccess: true,
+      where: { placement: { equals: slot.placement } },
+    })
+
+    if (!existing.docs[0]) {
+      await payload.create({
+        collection: 'ad-slots',
+        data: slot,
+        overrideAccess: true,
+      })
+      console.log(`Created ad slot: ${slot.placement}`)
+    }
+  }
+
   console.log('Seed complete.')
   await sql.end()
   await payload.destroy()
