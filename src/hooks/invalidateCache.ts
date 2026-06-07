@@ -1,4 +1,4 @@
-import type { CollectionAfterChangeHook } from 'payload'
+import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'payload'
 import { invalidateCache } from '@/lib/cache'
 
 export const invalidatePostCache: CollectionAfterChangeHook = async ({ doc }) => {
@@ -21,8 +21,11 @@ export const invalidateTagCache: CollectionAfterChangeHook = async ({ doc }) => 
   return doc
 }
 
-export const invalidateAdCache: CollectionAfterChangeHook = async ({ doc }) => {
+export const invalidateAdCache: CollectionAfterChangeHook & CollectionAfterDeleteHook = async ({ doc }) => {
   const d = doc as Record<string, unknown>
-  if (d.placement) await invalidateCache(`ads:${d.placement as string}`)
+  const placement = typeof d.placement === 'object' && d.placement
+    ? String((d.placement as Record<string, unknown>).placement || '')
+    : String(d.placement || '')
+  if (placement) await invalidateCache(`ads:${placement}`)
   return doc
 }

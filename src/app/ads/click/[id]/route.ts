@@ -12,7 +12,7 @@ export async function GET(
     const ad = await payload.findByID({
       collection: 'ads',
       id,
-      depth: 0,
+      depth: 1,
     })
 
     if (!ad) {
@@ -35,7 +35,7 @@ export async function GET(
       data: {
         ad: id,
         eventType: 'click',
-        placement: adRecord.placement || '',
+        placement: typeof adRecord.placement === 'object' && adRecord.placement ? String((adRecord.placement as Record<string, unknown>).placement || '') : '',
         pageUrl: '',
         userAgent: '',
       },

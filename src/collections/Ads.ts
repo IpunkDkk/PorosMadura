@@ -56,7 +56,8 @@ export const Ads: CollectionConfig = {
     },
     {
       name: 'placement',
-      type: 'text',
+      type: 'relationship',
+      relationTo: 'ad-slots',
       required: true,
       label: 'Posisi (Placement)',
     },

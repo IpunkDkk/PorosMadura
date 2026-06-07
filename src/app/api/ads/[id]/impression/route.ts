@@ -13,7 +13,7 @@ export async function POST(
     const ad = await payload.findByID({
       collection: 'ads',
       id,
-      depth: 0,
+      depth: 1,
     })
 
     if (!ad) {
@@ -36,7 +36,7 @@ export async function POST(
       data: {
         ad: id,
         eventType: 'impression',
-        placement: body.placement || adRecord.placement || '',
+        placement: body.placement || (typeof adRecord.placement === 'object' && adRecord.placement ? String((adRecord.placement as Record<string, unknown>).placement || '') : ''),
         pageUrl: body.pageUrl || '',
         userAgent: request.headers.get('user-agent') || '',
       },
