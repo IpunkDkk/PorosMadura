@@ -10,6 +10,9 @@ import { Tags } from './collections/Tags'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Redirects } from './collections/Redirects'
+import { Ads } from './collections/Ads'
+import { AdSlots } from './collections/AdSlots'
+import { AdEvents } from './collections/AdEvents'
 import { Settings } from './collections/Settings'
 
 export default buildConfig({
@@ -48,6 +51,9 @@ export default buildConfig({
     Media,
     Pages,
     Redirects,
+    Ads,
+    AdSlots,
+    AdEvents,
   ],
   globals: [Settings],
   sharp,
