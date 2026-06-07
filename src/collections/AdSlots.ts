@@ -9,7 +9,7 @@ export const AdSlots: CollectionConfig = {
     defaultColumns: ['placement', 'label', 'isActive', 'isFallbackActive'],
   },
   access: {
-    create: isAdmin,
+    create: () => false,
     read: canReadAny,
     update: isAdmin,
     delete: isAdmin,

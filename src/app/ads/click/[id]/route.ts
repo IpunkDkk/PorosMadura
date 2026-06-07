@@ -32,6 +32,7 @@ export async function GET(
 
     await payload.create({
       collection: 'ad-events',
+      overrideAccess: true,
       data: {
         ad: Number(id),
         eventType: 'click',

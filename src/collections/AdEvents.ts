@@ -10,7 +10,7 @@ export const AdEvents: CollectionConfig = {
     listSearchableFields: ['placement', 'eventType'],
   },
   access: {
-    create: () => true,
+    create: () => false,
     read: isAdmin,
     update: () => false,
     delete: () => false,

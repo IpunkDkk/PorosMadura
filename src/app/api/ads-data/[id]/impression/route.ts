@@ -33,6 +33,7 @@ export async function POST(
 
     await payload.create({
       collection: 'ad-events',
+      overrideAccess: true,
       data: {
         ad: Number(id),
         eventType: 'impression',
