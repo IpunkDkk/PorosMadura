@@ -57,4 +57,5 @@ export const CacheKeys = {
   breaking: () => 'breaking-news',
   featured: () => 'featured-posts',
   views: (id: string) => `views:post:${id}`,
+  ads: (placement: string) => `ads:${placement}`,
 }

@@ -20,3 +20,9 @@ export const invalidateTagCache: CollectionAfterChangeHook = async ({ doc }) => 
   await invalidateCache('homepage')
   return doc
 }
+
+export const invalidateAdCache: CollectionAfterChangeHook = async ({ doc }) => {
+  const d = doc as Record<string, unknown>
+  if (d.placement) await invalidateCache(`ads:${d.placement as string}`)
+  return doc
+}
