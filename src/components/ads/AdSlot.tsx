@@ -48,7 +48,7 @@ export default function AdSlot({ placement, className = '' }: AdSlotProps) {
     setLoading(true)
     setError(false)
 
-    fetch(`/api/ads?placement=${encodeURIComponent(placement)}`, {
+    fetch(`/api/ads-data?placement=${encodeURIComponent(placement)}`, {
       signal: controller.signal,
     })
       .then((res) => {
@@ -77,7 +77,7 @@ export default function AdSlot({ placement, className = '' }: AdSlotProps) {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !impressionSent.current) {
             impressionSent.current = true
-            fetch(`/api/ads/${ad.id}/impression`, {
+            fetch(`/api/ads-data/${ad.id}/impression`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ placement, pageUrl: window.location.href }),
