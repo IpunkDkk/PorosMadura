@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { canReadAny } from '@/hooks/accessControl'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -13,8 +14,14 @@ export const Media: CollectionConfig = {
       { name: 'hero', width: 1280, height: 720, fit: 'cover' },
       { name: 'og', width: 1200, height: 630, fit: 'cover' },
     ],
-    staticDir: '../public/media',
+    staticDir: 'public/media',
     disableLocalStorage: false,
+  },
+  access: {
+    read: canReadAny,
+    create: canReadAny,
+    update: () => false,
+    delete: () => false,
   },
   fields: [
     {
