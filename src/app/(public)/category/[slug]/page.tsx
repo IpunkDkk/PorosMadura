@@ -3,6 +3,7 @@ import { ArticleCard } from '@/components/article/ArticleCard'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { normalizePost } from '@/lib/cms'
+import AdSlot from '@/components/ads/AdSlot'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -44,6 +45,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       {catDescription && (
         <p className="text-gray-600 mb-8">{catDescription}</p>
       )}
+      <AdSlot placement="category_top" className="my-6" />
       <div className="flex flex-col gap-6">
         {result.docs.map(normalizePost).map((post) => (
           <ArticleCard
