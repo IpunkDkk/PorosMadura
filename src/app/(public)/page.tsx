@@ -6,6 +6,7 @@ import { ArticleCard } from '@/components/article/ArticleCard'
 import { PopularPosts } from '@/components/sidebar/PopularPosts'
 import { SocialFollow } from '@/components/sidebar/SocialFollow'
 import { normalizePost } from '@/lib/cms'
+import AdSlot from '@/components/ads/AdSlot'
 
 export const dynamic = 'force-static'
 export const revalidate = 300
@@ -52,6 +53,9 @@ export default async function HomePage() {
         {/* Hero Section */}
         <HeroNews featured={featuredPosts} />
 
+        {/* Homepage Top Banner */}
+        <AdSlot placement="home_top_banner" className="my-6" />
+
         {/* Main Content + Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Left Column: Latest News */}
@@ -82,6 +86,8 @@ export default async function HomePage() {
           <aside className="lg:col-span-4 space-y-10">
             <PopularPosts posts={popularPosts} />
             <SocialFollow />
+            <AdSlot placement="home_sidebar_top" />
+            <AdSlot placement="home_sidebar_bottom" />
           </aside>
         </div>
       </div>
