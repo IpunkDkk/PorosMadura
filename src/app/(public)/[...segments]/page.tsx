@@ -4,6 +4,7 @@ import { Calendar, Clock, User } from 'lucide-react'
 import { getPageBySlug, getPostBySlug } from '@/lib/payload'
 import { getImageSizeUrl } from '@/lib/media'
 import { asRecord, renderRichText } from '@/lib/cms'
+import AdSlot from '@/components/ads/AdSlot'
 
 interface Props {
   params: Promise<{ segments?: string[] }>
@@ -191,9 +192,13 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
           </div>
         )}
 
+        <AdSlot placement="article_top" className="my-6" />
+
         <div className="prose prose-lg prose-headings:font-heading max-w-none mb-8 leading-relaxed">
           <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
         </div>
+
+        <AdSlot placement="article_bottom" className="my-6" />
 
         {tagsData.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
