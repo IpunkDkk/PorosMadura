@@ -3,7 +3,6 @@ import config from '@/payload.config'
 import type { MetadataRoute } from 'next'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const payload = await getPayload({ config })
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://porosmadura.com'
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -15,6 +14,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/privacy-policy`, priority: 0.3, changeFrequency: 'yearly' as const },
     { url: `${siteUrl}/disclaimer`, priority: 0.3, changeFrequency: 'yearly' as const },
   ]
+
+  let payload
+  try {
+    payload = await getPayload({ config })
+  } catch {
+    // DB not reachable (e.g., during Docker build), return static pages only
+    return staticPages
+  }
 
   const { docs: posts } = await payload.find({
     collection: 'posts',

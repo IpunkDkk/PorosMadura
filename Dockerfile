@@ -6,6 +6,12 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
+# Patch: @better-auth/kysely-adapter imports DEFAULT_MIGRATION_* from "kysely"
+# barrel, but kysely only exports them from "kysely/migration".
+# Adding re-exports from migration module to the main barrel file.
+RUN echo 'export { DEFAULT_MIGRATION_TABLE, DEFAULT_MIGRATION_LOCK_TABLE } from "./migration/migrator.js";' \
+      >> /app/node_modules/kysely/dist/index.js
+
 FROM base AS builder
 ARG DATABASE_URI
 ARG PAYLOAD_SECRET
