@@ -1,6 +1,17 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        DATABASE_URI: ${DATABASE_URI}
+        PAYLOAD_SECRET: ${PAYLOAD_SECRET:-dummy-build-only}
+        REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dummy-build-only}
+        BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+        MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-true}
+        MEILISEARCH_HOST: ${MEILISEARCH_HOST:-http://meilisearch:7700}
+        MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-master-key}
     restart: unless-stopped
     env_file: .env
     volumes:
