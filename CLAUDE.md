@@ -19,7 +19,8 @@ docker compose up --build                          # Build & run full stack
 npm run seed             # Seed CMS with sample data (categories, authors, tags, posts)
 ```
 
-Copy `.env.example` → `.env` before developing. `PAYLOAD_SECRET` and `BETTER_AUTH_SECRET` must be set.
+Copy `.env.example` → `.env` before developing. `PAYLOAD_SECRET` and `BETTER_AUTH_SECRET` must be set.  
+For ngrok/preview URLs, add `CORS_EXTRA_ORIGINS=https://your-ngrok-url.ngrok-free.app` to `.env`.
 
 ## Architecture
 
@@ -80,8 +81,11 @@ Tailwind CSS v4 with custom theme tokens in `src/css/globals.css`. Fonts: Inter 
 ### Key Patterns
 
 - Public pages fetch data server-side via `src/lib/payload.ts` helpers
+- Homepage uses ISR (`export const revalidate = 300`, `force-static`)
 - Payload collection hooks are registered in the collection config, never called directly
 - Post data flows through `normalizePost()` before reaching components
 - Search API uses Meilisearch first, falls back to Payload SQL `like` queries
 - `view` counts and `readingTime` on Posts are read-only admin fields updated externally
 - `depth: 2` is the standard population depth for related data
+- Logo: Header uses `logo-putih.png` (navy bg), Footer uses `logo.png` (white bg); both show Settings → logo upload if set
+- Media URLs from Payload are made dynamic at render time (local host → relative path) so they work on any domain

@@ -37,3 +37,10 @@ next-env.d.ts
 
 # media uploads
 public/media/
+docs*
+.superpowers*
+CLAUDE.md
+AGENT.md
+adds_plan.md
+home_sample_design.tsx
+prd.md
