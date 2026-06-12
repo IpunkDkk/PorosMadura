@@ -8,7 +8,6 @@ import { SocialFollow } from '@/components/sidebar/SocialFollow'
 import { normalizePost } from '@/lib/cms'
 import AdSlot from '@/components/ads/AdSlot'
 
-export const dynamic = 'force-static'
 export const revalidate = 300
 
 export const metadata: Metadata = {
