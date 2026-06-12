@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx src/db/seed.ts",
+    "seed": "./node_modules/.bin/tsx src/db/seed.ts",
     "migrate": "payload migrate",
     "migrate:fresh": "payload migrate:fresh",
     "migrate:create": "payload migrate:create",
