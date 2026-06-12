@@ -14,6 +14,7 @@ import { Ads } from './collections/Ads'
 import { AdSlots } from './collections/AdSlots'
 import { AdEvents } from './collections/AdEvents'
 import { Settings } from './collections/Settings'
+import { migrations } from './migrations'
 
 export default buildConfig({
   admin: {
@@ -41,6 +42,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI!,
     },
+    prodMigrations: migrations,
   }),
   collections: [
     Users,
