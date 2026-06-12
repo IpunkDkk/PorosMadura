@@ -15,11 +15,21 @@ const mockPayload = {
 export async function getPayloadClient(): Promise<BasePayload> {
   if (cachedPayload) return cachedPayload
   try {
-    cachedPayload = await getPayload({ config })
+    const payload = await getPayload({ config })
+    // Test if DB tables are actually available (they may not be during Docker build)
+    try {
+      await payload.find({ collection: 'posts', limit: 1, depth: 0 })
+    } catch {
+      console.warn('[Payload] DB tables not available — using mock client (build only)')
+      cachedPayload = mockPayload
+      return cachedPayload
+    }
+    cachedPayload = payload
     return cachedPayload
   } catch {
     console.warn('[Payload] DB not reachable — using mock client (build only)')
-    return mockPayload
+    cachedPayload = mockPayload
+    return cachedPayload
   }
 }
 
