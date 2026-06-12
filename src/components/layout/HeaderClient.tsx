@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Menu, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -14,7 +14,16 @@ interface HeaderClientProps {
 
 export default function HeaderClient({ categories, settings }: HeaderClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const pathname = usePathname()
+
+  useEffect(() => {
+    // Deteksi session Payload admin dari cookie payload-token
+    const hasToken = document.cookie
+      .split('; ')
+      .some((row) => row.startsWith('payload-token='))
+    setIsAdmin(hasToken)
+  }, [])
 
   const isActiveCategory = (slug: string) => pathname === `/category/${slug}`
 
@@ -52,9 +61,11 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
             <div className="hidden lg:flex items-center gap-6">
               <span className="text-sm text-white/80 font-medium">{today}</span>
               <div className="h-4 w-px bg-white/20" />
-              <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors font-medium" title="Dashboard Admin">
-                Dashboard
-              </Link>
+              {isAdmin && (
+                <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors font-medium" title="Dashboard Admin">
+                  Dashboard
+                </Link>
+              )}
               <Link className="hover:text-poros-red transition-colors" aria-label="Cari" href="/search">
                 <Search size={20} />
               </Link>
@@ -62,9 +73,11 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
             </div>
 
             <div className="lg:hidden flex items-center gap-4">
-              <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors" title="Dashboard Admin">
-                Dashboard
-              </Link>
+              {isAdmin && (
+                <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors" title="Dashboard Admin">
+                  Dashboard
+                </Link>
+              )}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="text-white"
