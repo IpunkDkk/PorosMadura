@@ -21,7 +21,7 @@ export default buildConfig({
     user: Users.slug,
     components: {
       beforeDashboard: ['@/components/admin/PorosAdminDashboard'],
-      beforeLogin: ['@/components/admin/PorosLoginHeader'],
+      beforeLogin: ['@/components/admin/PorosLoginHeader', '@/components/admin/PasswordToggleEnhancer'],
       graphics: {
         Icon: '@/components/admin/PorosAdminIcon',
         Logo: '@/components/admin/PorosAdminLogo',
