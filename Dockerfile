@@ -83,7 +83,7 @@ USER nextjs
 EXPOSE 3000
 ENV PORT 3000
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=15s \
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=90s \
   CMD wget --spider http://localhost:3000/api/health || exit 1
 
 CMD ["node", "server.js"]
