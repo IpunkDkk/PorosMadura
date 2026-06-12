@@ -67,8 +67,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Install tsx for running seed script in production
-RUN npm install -g tsx@^4.22.4
+# Install tools for health check and seed script
+RUN apk add --no-cache wget && \
+    npm install -g tsx@^4.22.4
+
+# Full node_modules needed for seed script (standalone output only has traced deps)
+COPY --from=deps /app/node_modules ./node_modules
 
 # Source files needed for npm run seed (tsx reads .ts sources at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
@@ -78,4 +82,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 USER nextjs
 EXPOSE 3000
 ENV PORT 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=15s \
+  CMD wget --spider http://localhost:3000/api/health || exit 1
+
 CMD ["node", "server.js"]
