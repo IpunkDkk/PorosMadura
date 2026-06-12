@@ -12,6 +12,7 @@ export default function PorosAdminDashboard() {
       <div className="poros-dashboard-hero__actions" aria-label="Aksi cepat">
         <a href="/admin/collections/posts/create">Tulis Berita</a>
         <a href="/admin/collections/media">Media Library</a>
+        <a href="/" target="_blank" rel="noopener noreferrer">Lihat Website →</a>
       </div>
     </section>
   )

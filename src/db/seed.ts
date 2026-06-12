@@ -353,7 +353,11 @@ async function seed() {
 
   // Seed default ad slots
   const defaultSlots = [
+    { placement: 'header_banner', label: 'Header Banner', description: 'Banner full-width di atas header' },
+    { placement: 'home_skyscraper_left', label: 'Home Skyscraper Left', description: 'Iklan vertikal di kiri konten homepage' },
+    { placement: 'home_skyscraper_right', label: 'Home Skyscraper Right', description: 'Iklan vertikal di kanan konten homepage' },
     { placement: 'home_top_banner', label: 'Homepage Top Banner', description: 'Banner besar di bagian atas homepage' },
+    { placement: 'home_before_latest', label: 'Homepage Before Latest', description: 'Iklan sebelum bagian berita terbaru' },
     { placement: 'home_middle_banner', label: 'Homepage Middle Banner', description: 'Banner di tengah daftar berita' },
     { placement: 'home_sidebar_top', label: 'Homepage Sidebar Top', description: 'Sidebar kanan/kiri bagian atas' },
     { placement: 'home_sidebar_bottom', label: 'Homepage Sidebar Bottom', description: 'Sidebar kanan/kiri bagian bawah' },
@@ -366,6 +370,7 @@ async function seed() {
     { placement: 'mobile_sticky_bottom', label: 'Mobile Sticky Bottom', description: 'Iklan sticky bawah di mobile' },
     { placement: 'mobile_article_middle', label: 'Mobile Article Middle', description: 'Iklan tengah artikel versi mobile' },
     { placement: 'popup_campaign', label: 'Popup Campaign', description: 'Popup promosi/campaign' },
+    { placement: 'home_horizontal_ad', label: 'Home Horizontal Ad', description: 'Iklan horizontal lebar-rendah di bawah scroll section' },
   ]
 
   for (const slot of defaultSlots) {

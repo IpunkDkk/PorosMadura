@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import MobileStickyAd from '@/components/ads/MobileStickyAd'
 import PopupCampaign from '@/components/ads/PopupCampaign'
+import AdSlot from '@/components/ads/AdSlot'
 import { getSiteSettings } from '@/lib/payload'
 import { getSettingsOgImage, normalizeSettings } from '@/lib/cms'
 
@@ -62,6 +63,7 @@ export default function PublicLayout({
       className={`${inter.variable} ${merriweather.variable}`}
     >
       <body className="min-h-screen bg-page-bg text-text-primary font-body antialiased flex flex-col">
+        <AdSlot placement="header_banner" className="w-full bg-gray-100" />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

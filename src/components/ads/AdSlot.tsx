@@ -20,8 +20,12 @@ interface AdSlotProps {
   className?: string
 }
 
-const PLACEMENT_DIMENSIONS: Record<string, { h: number }> = {
+const PLACEMENT_DIMENSIONS: Record<string, { w?: number; h: number }> = {
+  header_banner: { h: 90 },
+  home_skyscraper_left: { w: 160, h: 600 },
+  home_skyscraper_right: { w: 160, h: 600 },
   home_top_banner: { h: 250 },
+  home_before_latest: { h: 90 },
   home_middle_banner: { h: 90 },
   home_sidebar_top: { h: 250 },
   home_sidebar_bottom: { h: 600 },
@@ -34,6 +38,7 @@ const PLACEMENT_DIMENSIONS: Record<string, { h: number }> = {
   mobile_sticky_bottom: { h: 50 },
   mobile_article_middle: { h: 100 },
   popup_campaign: { h: 400 },
+  home_horizontal_ad: { h: 90 },
 }
 
 export default function AdSlot({ placement, className = '' }: AdSlotProps) {
@@ -94,11 +99,13 @@ export default function AdSlot({ placement, className = '' }: AdSlotProps) {
   }, [ad, placement])
 
   if (loading) {
-    const height = PLACEMENT_DIMENSIONS[placement]?.h || 90
+    const dims = PLACEMENT_DIMENSIONS[placement]
+    const height = dims?.h || 90
+    const width = dims?.w || '100%'
     return (
       <div
         className={`bg-gray-100 animate-pulse rounded-lg ${className}`}
-        style={{ height, width: '100%' }}
+        style={{ height, width: typeof width === 'number' ? width : width }}
         role="status"
         aria-label="Memuat iklan"
       />

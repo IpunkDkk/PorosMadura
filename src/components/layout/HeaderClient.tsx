@@ -52,6 +52,9 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
             <div className="hidden lg:flex items-center gap-6">
               <span className="text-sm text-white/80 font-medium">{today}</span>
               <div className="h-4 w-px bg-white/20" />
+              <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors font-medium" title="Dashboard Admin">
+                Dashboard
+              </Link>
               <Link className="hover:text-poros-red transition-colors" aria-label="Cari" href="/search">
                 <Search size={20} />
               </Link>
@@ -59,8 +62,8 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
             </div>
 
             <div className="lg:hidden flex items-center gap-4">
-              <Link className="hover:text-poros-red transition-colors" aria-label="Cari" href="/search">
-                <Search size={22} />
+              <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors" title="Dashboard Admin">
+                Dashboard
               </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
