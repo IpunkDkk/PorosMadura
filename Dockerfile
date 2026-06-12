@@ -70,6 +70,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Install tsx for running seed script in production
 RUN npm install -g tsx@^4.22.4
 
+# Source files needed for npm run seed (tsx reads .ts sources at runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+
 USER nextjs
 EXPOSE 3000
 ENV PORT 3000
