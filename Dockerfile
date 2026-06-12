@@ -71,8 +71,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 RUN apk add --no-cache wget && \
     npm install -g tsx@^4.22.4
 
-# Full node_modules needed for seed script (standalone output only has traced deps)
-COPY --from=deps /app/node_modules ./node_modules
+# Install packages needed by seed script that aren't in standalone trace
+RUN npm install @next/env
 
 # Source files needed for npm run seed (tsx reads .ts sources at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
