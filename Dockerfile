@@ -49,6 +49,7 @@ ARG MEILISEARCH_ENABLED
 ARG MEILISEARCH_HOST
 ARG MEILISEARCH_API_KEY
 ENV NODE_ENV=production \
+    HOSTNAME=0.0.0.0 \
     DATABASE_URI=$DATABASE_URI \
     PAYLOAD_SECRET=$PAYLOAD_SECRET \
     REDIS_URL=$REDIS_URL \
@@ -84,6 +85,6 @@ EXPOSE 3000
 ENV PORT 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=90s \
-  CMD wget --spider http://localhost:3000/api/health || exit 1
+  CMD wget --spider http://127.0.0.1:3000/api/health || exit 1
 
 CMD ["node", "server.js"]
