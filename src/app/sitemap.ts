@@ -1,6 +1,7 @@
-import { getPayload } from 'payload'
-import config from '@/payload.config'
+import { getPayloadClient } from '@/lib/payload'
 import type { MetadataRoute } from 'next'
+
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://porosmadura.com'
@@ -17,68 +18,76 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let payload
   try {
-    payload = await getPayload({ config })
+    payload = await getPayloadClient()
   } catch {
     // DB not reachable (e.g., during Docker build), return static pages only
     return staticPages
   }
 
-  const { docs: posts } = await payload.find({
-    collection: 'posts',
-    limit: 1000,
-    where: {
-      status: { equals: 'published' },
-      publishedAt: { less_than_equal: new Date().toISOString() },
-    },
-    sort: '-publishedAt',
-    depth: 1,
-  })
+  // If payload is the mock client (DB not reachable), return static pages only
+  if (!payload) return staticPages
 
-  const postUrls: MetadataRoute.Sitemap = (posts as Array<Record<string, unknown>>).map((post) => {
-    const categorySlug = typeof post.category === 'object' ? (post.category as Record<string, string>)?.slug : ''
-    return {
-      url: `${siteUrl}/${categorySlug}/${post.slug as string}`,
-      lastModified: (post.updatedAt as string) || (post.publishedAt as string),
+  try {
+    const { docs: posts } = await payload.find({
+      collection: 'posts',
+      limit: 1000,
+      where: {
+        status: { equals: 'published' },
+        publishedAt: { less_than_equal: new Date().toISOString() },
+      },
+      sort: '-publishedAt',
+      depth: 1,
+    })
+
+    const postUrls: MetadataRoute.Sitemap = (posts as Array<Record<string, unknown>>).map((post) => {
+      const categorySlug = typeof post.category === 'object' ? (post.category as Record<string, string>)?.slug : ''
+      return {
+        url: `${siteUrl}/${categorySlug}/${post.slug as string}`,
+        lastModified: (post.updatedAt as string) || (post.publishedAt as string),
+        changeFrequency: 'daily' as const,
+        priority: 0.8,
+      }
+    })
+
+    const { docs: categories } = await payload.find({
+      collection: 'categories',
+      limit: 100,
+      where: { isActive: { equals: true } },
+    })
+
+    const categoryUrls: MetadataRoute.Sitemap = (categories as Array<Record<string, unknown>>).map((cat) => ({
+      url: `${siteUrl}/category/${cat.slug as string}`,
       changeFrequency: 'daily' as const,
-      priority: 0.8,
-    }
-  })
+      priority: 0.6,
+    }))
 
-  const { docs: categories } = await payload.find({
-    collection: 'categories',
-    limit: 100,
-    where: { isActive: { equals: true } },
-  })
+    const { docs: tags } = await payload.find({
+      collection: 'tags',
+      limit: 100,
+      where: { isActive: { equals: true } },
+    })
 
-  const categoryUrls: MetadataRoute.Sitemap = (categories as Array<Record<string, unknown>>).map((cat) => ({
-    url: `${siteUrl}/category/${cat.slug as string}`,
-    changeFrequency: 'daily' as const,
-    priority: 0.6,
-  }))
+    const tagUrls: MetadataRoute.Sitemap = (tags as Array<Record<string, unknown>>).map((tag) => ({
+      url: `${siteUrl}/tag/${tag.slug as string}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.4,
+    }))
 
-  const { docs: tags } = await payload.find({
-    collection: 'tags',
-    limit: 100,
-    where: { isActive: { equals: true } },
-  })
+    const { docs: authors } = await payload.find({
+      collection: 'authors',
+      limit: 100,
+      where: { isActive: { equals: true } },
+    })
 
-  const tagUrls: MetadataRoute.Sitemap = (tags as Array<Record<string, unknown>>).map((tag) => ({
-    url: `${siteUrl}/tag/${tag.slug as string}`,
-    changeFrequency: 'weekly' as const,
-    priority: 0.4,
-  }))
+    const authorUrls: MetadataRoute.Sitemap = (authors as Array<Record<string, unknown>>).map((author) => ({
+      url: `${siteUrl}/author/${author.slug as string}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.4,
+    }))
 
-  const { docs: authors } = await payload.find({
-    collection: 'authors',
-    limit: 100,
-    where: { isActive: { equals: true } },
-  })
-
-  const authorUrls: MetadataRoute.Sitemap = (authors as Array<Record<string, unknown>>).map((author) => ({
-    url: `${siteUrl}/author/${author.slug as string}`,
-    changeFrequency: 'weekly' as const,
-    priority: 0.4,
-  }))
-
-  return [...staticPages, ...postUrls, ...categoryUrls, ...tagUrls, ...authorUrls]
+    return [...staticPages, ...postUrls, ...categoryUrls, ...tagUrls, ...authorUrls]
+  } catch {
+    // DB queries failed (e.g., during Docker build), return static pages only
+    return staticPages
+  }
 }
