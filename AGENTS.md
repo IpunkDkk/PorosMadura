@@ -6,12 +6,11 @@ This repository is a Next.js 15 application with Payload CMS 3. Application code
 
 ## Build, Test, and Development Commands
 
-- `npm run dev`: start the local Next.js development server.
-- `npm run build`: build the production app and run Next/Payload compile checks.
-- `npm run start`: serve the built app.
-- `npm run lint`: run the configured Next.js lint command.
-- `docker compose up -d postgres redis meilisearch`: start local service dependencies.
-- `docker compose up --build`: build and run the full stack, including the app container.
+- `docker compose up -d`: start the local development stack (app, postgres, redis, meilisearch).
+- `docker compose up --build`: build and run the full stack in the foreground.
+- `docker compose exec app npm run seed`: seed the database inside the container.
+- `docker compose exec app npm run migrate`: run database migrations inside the container.
+- `docker compose exec app npm run lint`: run Next.js lint checks inside the container.
 
 Copy `.env.example` to `.env` before local development and keep secrets out of commits.
 

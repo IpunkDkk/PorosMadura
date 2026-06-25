@@ -1,0 +1,98 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-porosmadura}
+      POSTGRES_USER: porosmadura
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U porosmadura -d ${DB_DATABASE:-porosmadura}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:?Set Meilisearch API Key (min 16 characters)}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+    expose:
+      - "7700"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URI: postgres://porosmadura:${SERVICE_PASSWORD_db}@db:5432/${DB_DATABASE:-porosmadura}
+        PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+        REDIS_URL: redis://redis:6379/0
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL (e.g. https://porosmadura.com)}
+        BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET}
+        BETTER_AUTH_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL}
+        MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-true}
+        MEILISEARCH_HOST: http://meilisearch:7700
+        MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-}
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URI: postgres://porosmadura:${SERVICE_PASSWORD_db}@db:5432/${DB_DATABASE:-porosmadura}
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+      REDIS_URL: redis://redis:6379/0
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${NEXT_PUBLIC_SITE_URL}
+      MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-true}
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      NEXT_PUBLIC_MEDIA_URL: ${NEXT_PUBLIC_MEDIA_URL:-/media}
+    volumes:
+      - media_data:/app/public/media
+    expose:
+      - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  redis_data:
+  meilisearch_data:
+  media_data:

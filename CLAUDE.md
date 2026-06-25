@@ -5,18 +5,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Development
-npm run dev              # Start Next.js dev server (localhost:3000)
-npm run build            # Production build with type/lint checks
-npm run start            # Serve built app
-npm run lint             # Next.js lint
+# Development & Run (Docker)
+docker compose up -d                        # Start all services (app, postgres, redis, meilisearch)
+docker compose up --build                   # Build & run full stack in foreground
+docker compose down                         # Stop all services
 
-# Services (Docker)
-docker compose up -d postgres redis meilisearch   # Start dependencies
-docker compose up --build                          # Build & run full stack
-
-# Database
-npm run seed             # Seed CMS with sample data (categories, authors, tags, posts)
+# Commands & DB Operations (Inside Docker Container)
+docker compose exec app npm run seed        # Seed CMS with sample data
+docker compose exec app npm run migrate     # Run database migrations
+docker compose exec app npm run lint        # Next.js lint check
+docker compose logs -f app                  # Follow app container logs
 ```
 
 Copy `.env.example` → `.env` before developing. `PAYLOAD_SECRET` and `BETTER_AUTH_SECRET` must be set.  
