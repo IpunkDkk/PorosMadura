@@ -24,7 +24,10 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
     setIsAdmin(hasToken)
   }, [])
 
-  const isActiveCategory = (slug: string) => pathname === `/category/${slug}`
+  const isActiveCategory = (slug: string) =>
+    pathname === `/category/${slug}` ||
+    pathname.startsWith(`/category/${slug}/`) ||
+    (pathname.startsWith(`/${slug}/`) && !pathname.startsWith('/category/'))
 
   const today = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -92,7 +95,9 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
       <div className="bg-white border-b border-border-light sticky top-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 lg:px-8">
           <nav className="flex items-center py-3 overflow-x-auto hide-scrollbar gap-6">
-            <Link href="/" className="text-sm font-bold text-poros-red whitespace-nowrap">
+            <Link href="/" className={`text-sm font-bold whitespace-nowrap transition-colors ${
+              pathname === '/' ? 'text-poros-red' : 'text-gray-600 hover:text-poros-red'
+            }`}>
               HOME
             </Link>
             {categories.map((cat) => (

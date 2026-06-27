@@ -41,7 +41,15 @@ export default async function CmsPostsPage() {
                 <td className="px-4 py-3">{post.category?.name || '-'}</td>
                 <td className="px-4 py-3">{post.author?.name || '-'}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold uppercase text-text-secondary">
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase ${
+                    post.status === 'published'
+                      ? 'bg-green-100 text-green-700'
+                      : post.status === 'scheduled'
+                        ? 'bg-blue-100 text-blue-700'
+                        : post.status === 'archived'
+                          ? 'bg-rose-100 text-rose-700'
+                          : 'bg-gray-100 text-gray-500'
+                  }`}>
                     {post.status || 'draft'}
                   </span>
                 </td>
@@ -49,7 +57,7 @@ export default async function CmsPostsPage() {
                   {post.publishedAt ? new Date(post.publishedAt).toLocaleString('id-ID') : '-'}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/cms/posts/${post.id}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">
+                  <Link href={`/cms/posts/${post.slug}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">
                     <Pencil size={14} /> Edit
                   </Link>
                 </td>

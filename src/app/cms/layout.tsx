@@ -6,6 +6,7 @@ import '@/css/globals.css'
 const navItems = [
   { href: '/cms', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'editor', 'author'] },
   { href: '/cms/posts', label: 'Artikel', icon: 'posts', roles: ['admin', 'editor', 'author'] },
+  { href: '/cms/pages', label: 'Halaman', icon: 'pages', roles: ['admin', 'editor'] },
   { href: '/cms/media', label: 'Media', icon: 'media', roles: ['admin', 'editor'] },
   { href: '/cms/ads', label: 'Iklan', icon: 'ads', roles: ['admin', 'editor'] },
   {

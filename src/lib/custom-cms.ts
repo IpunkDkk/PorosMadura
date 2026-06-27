@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, inArray, lte, or, type SQL } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   authors,
@@ -30,7 +30,10 @@ const emptyResult = <T>(page = 1, limit = 10): CmsResult<T> => ({
 
 function toIso(value: Date | string | null | undefined): string | null {
   if (!value) return null
-  return value instanceof Date ? value.toISOString() : value
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value.toISOString()
+  }
+  return value
 }
 
 function readEquals(value: unknown): unknown {
@@ -99,7 +102,7 @@ function postSort(sort?: string) {
 
 function buildPostConditions(where: CmsWhere = {}) {
   const conditions: SQL[] = [
-    eq(posts.status, 'published'),
+    sql`${posts.status}::text = 'published'`,
     lte(posts.publishedAt, new Date()),
   ]
 
@@ -195,7 +198,7 @@ export async function getPostBySlug(categorySlug: string, postSlug: string) {
     const post = await db.query.posts.findFirst({
       where: and(
         eq(posts.slug, postSlug),
-        eq(posts.status, 'published'),
+        sql`${posts.status}::text = 'published'`,
         lte(posts.publishedAt, new Date()),
       ),
       with: {
@@ -259,7 +262,7 @@ export async function getAuthorBySlug(slug: string) {
 export async function getPageBySlug(slug: string) {
   try {
     const page = await db.query.pages.findFirst({
-      where: and(eq(pages.slug, slug), eq(pages.status, 'published')),
+      where: and(eq(pages.slug, slug), sql`${pages.status}::text = 'published'`),
     })
     if (!page) return null
     return {

@@ -156,16 +156,42 @@ export async function getCmsPostList() {
   })
 }
 
-export async function getCmsPostFormData(id?: number) {
+export async function getCmsPostFormData(idOrSlug?: number | string) {
   const session = await requireCmsRole(['admin', 'editor', 'author'])
-  if (id) await assertCanEditPost(session, id)
-  const [post, categoryRows, authorRows, tagRows, mediaRows] = await Promise.all([
-    id
-      ? db.query.posts.findFirst({
-          where: eq(posts.id, id),
+  
+  let postQuery = null
+  if (idOrSlug !== undefined && idOrSlug !== null) {
+    if (typeof idOrSlug === 'number') {
+      await assertCanEditPost(session, idOrSlug)
+      postQuery = db.query.posts.findFirst({
+        where: eq(posts.id, idOrSlug),
+        with: { postTags: true },
+      })
+    } else {
+      const numericId = Number(idOrSlug)
+      if (Number.isFinite(numericId)) {
+        await assertCanEditPost(session, numericId)
+        postQuery = db.query.posts.findFirst({
+          where: eq(posts.id, numericId),
           with: { postTags: true },
         })
-      : Promise.resolve(null),
+      } else {
+        const resolvedPost = await db.query.posts.findFirst({
+          where: eq(posts.slug, idOrSlug),
+        })
+        if (resolvedPost) {
+          await assertCanEditPost(session, resolvedPost.id)
+          postQuery = db.query.posts.findFirst({
+            where: eq(posts.id, resolvedPost.id),
+            with: { postTags: true },
+          })
+        }
+      }
+    }
+  }
+
+  const [post, categoryRows, authorRows, tagRows, mediaRows] = await Promise.all([
+    postQuery || Promise.resolve(null),
     db.query.categories.findMany({ orderBy: categories.order }),
     db.query.authors.findMany({ orderBy: authors.name }),
     db.query.tags.findMany({ orderBy: tags.name }),
@@ -186,11 +212,11 @@ export async function createPostAction(formData: FormData) {
   const session = await requireCmsRole(['admin', 'editor', 'author'])
   const forcedAuthorId = await getAuthorIdForSession(session)
   const data = normalizePostForm(formData, session, forcedAuthorId)
-  const [post] = await db.insert(posts).values(data).returning({ id: posts.id })
+  const [post] = await db.insert(posts).values(data).returning({ id: posts.id, slug: posts.slug })
   await syncPostTags(post.id, formData)
   revalidatePath('/')
   revalidatePath('/cms/posts')
-  redirect(`/cms/posts/${post.id}`)
+  redirect(`/cms/posts/${post.slug}`)
 }
 
 export async function updatePostAction(id: number, formData: FormData) {
@@ -198,11 +224,11 @@ export async function updatePostAction(id: number, formData: FormData) {
   await assertCanEditPost(session, id)
   const forcedAuthorId = await getAuthorIdForSession(session)
   const data = normalizePostForm(formData, session, forcedAuthorId)
-  await db.update(posts).set(data).where(eq(posts.id, id))
+  const [post] = await db.update(posts).set(data).where(eq(posts.id, id)).returning({ slug: posts.slug })
   await syncPostTags(id, formData)
   revalidatePath('/')
   revalidatePath('/cms/posts')
-  redirect(`/cms/posts/${id}`)
+  redirect(`/cms/posts/${post.slug}`)
 }
 
 export async function deletePostAction(id: number) {
@@ -312,13 +338,12 @@ export async function saveAuthorAction(formData: FormData) {
 
 export async function getCmsSettingsData() {
   await requireCmsRole(['admin'])
-  const [settingsRow, pageRows, slotRows, mediaRows] = await Promise.all([
+  const [settingsRow, slotRows, mediaRows] = await Promise.all([
     db.query.settings.findFirst({ orderBy: desc(settings.updatedAt) }),
-    db.query.pages.findMany({ orderBy: desc(pages.updatedAt), limit: 50 }),
     db.query.adSlots.findMany({ orderBy: adSlots.placement }),
     db.query.media.findMany({ orderBy: desc(media.updatedAt), limit: 100 }),
   ])
-  return { settings: settingsRow, pages: pageRows, adSlots: slotRows, media: mediaRows }
+  return { settings: settingsRow, adSlots: slotRows, media: mediaRows }
 }
 
 export async function getCmsMediaList() {
@@ -473,6 +498,49 @@ export async function saveSettingsAction(formData: FormData) {
   redirect('/cms/settings')
 }
 
+export async function getCmsPageList() {
+  await requireCmsRole(['admin', 'editor'])
+  return db.query.pages.findMany({
+    orderBy: desc(pages.updatedAt),
+  })
+}
+
+export async function getCmsPageFormData(slugOrId?: string | number) {
+  await requireCmsRole(['admin', 'editor'])
+  let page = null
+  if (slugOrId !== undefined && slugOrId !== null) {
+    if (typeof slugOrId === 'number') {
+      page = await db.query.pages.findFirst({
+        where: eq(pages.id, slugOrId),
+      })
+    } else {
+      const numericId = Number(slugOrId)
+      if (Number.isFinite(numericId)) {
+        page = await db.query.pages.findFirst({
+          where: eq(pages.id, numericId),
+        })
+      } else {
+        page = await db.query.pages.findFirst({
+          where: eq(pages.slug, slugOrId),
+        })
+      }
+    }
+  }
+  const mediaRows = await db.query.media.findMany({ orderBy: desc(media.updatedAt), limit: 100 })
+  return {
+    page,
+    media: mediaRows,
+  }
+}
+
+export async function deletePageAction(id: number) {
+  await requireCmsRole(['admin'])
+  await db.delete(pages).where(eq(pages.id, id))
+  revalidatePath('/')
+  revalidatePath('/cms/pages')
+  redirect('/cms/pages')
+}
+
 export async function savePageAction(formData: FormData) {
   await requireCmsRole(['admin'])
   const id = numberValue(formData, 'id')
@@ -490,10 +558,14 @@ export async function savePageAction(formData: FormData) {
     updatedAt: new Date(),
   }
 
-  if (id) await db.update(pages).set(data).where(eq(pages.id, id))
-  else await db.insert(pages).values(data)
-  revalidatePath('/cms/settings')
-  redirect('/cms/settings')
+  if (id) {
+    await db.update(pages).set(data).where(eq(pages.id, id))
+  } else {
+    await db.insert(pages).values(data)
+  }
+  revalidatePath('/')
+  revalidatePath('/cms/pages')
+  redirect(`/cms/pages/${slug}`)
 }
 
 export async function saveAdSlotAction(formData: FormData) {

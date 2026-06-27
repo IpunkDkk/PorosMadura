@@ -88,53 +88,58 @@ export default async function HomePage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-6">
-                  {latestPosts.slice(0, 2).map((post) => (
-                    <ArticleCard
-                      key={post.id}
-                      title={post.title}
-                      slug={post.slug}
-                      excerpt={post.excerpt}
-                      featuredImage={post.featuredImage}
-                      category={post.category}
-                      author={post.author}
-                      publishedAt={post.publishedAt}
-                    />
-                  ))}
-                </div>
+                {latestPosts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 12h6m-6 4h.01" />
+                      </svg>
+                    </div>
+                    <p className="text-text-secondary font-semibold">Belum ada berita tersedia</p>
+                    <p className="text-sm text-gray-400 mt-1">Artikel akan muncul di sini setelah dipublikasikan</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-6">
+                    {latestPosts.slice(0, 2).map((post) => (
+                      <ArticleCard
+                        key={post.id}
+                        title={post.title}
+                        slug={post.slug}
+                        excerpt={post.excerpt}
+                        featuredImage={post.featuredImage}
+                        category={post.category}
+                        author={post.author}
+                        publishedAt={post.publishedAt}
+                      />
+                    ))}
 
-                <AdSlot placement="home_middle_banner" className="my-6" />
+                    <AdSlot placement="home_middle_banner" className="my-6" />
 
-                <div className="flex flex-col gap-6">
-                  {latestPosts.slice(2).map((post) => (
-                    <ArticleCard
-                      key={post.id}
-                      title={post.title}
-                      slug={post.slug}
-                      excerpt={post.excerpt}
-                      featuredImage={post.featuredImage}
-                      category={post.category}
-                      author={post.author}
-                      publishedAt={post.publishedAt}
-                    />
-                  ))}
-                </div>
+                    <div className="flex flex-col gap-6">
+                      {latestPosts.slice(2).map((post) => (
+                        <ArticleCard
+                          key={post.id}
+                          title={post.title}
+                          slug={post.slug}
+                          excerpt={post.excerpt}
+                          featuredImage={post.featuredImage}
+                          category={post.category}
+                          author={post.author}
+                          publishedAt={post.publishedAt}
+                        />
+                      ))}
+                    </div>
 
-                {/* Nav buttons for Berita Terbaru */}
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-border-light">
-                  <Link
-                    href="/search?sort=latest"
-                    className="text-sm font-semibold text-poros-red hover:text-red-700 transition-colors"
-                  >
-                    ← Berita Lebih Awal
-                  </Link>
-                  <Link
-                    href="/search?sort=latest"
-                    className="text-sm font-semibold text-poros-red hover:text-red-700 transition-colors"
-                  >
-                    Selanjutnya →
-                  </Link>
-                </div>
+                    <div className="flex justify-center mt-4 pt-4 border-t border-border-light">
+                      <Link
+                        href="/search?sort=latest"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border-2 border-poros-red text-poros-red text-sm font-bold hover:bg-poros-red hover:text-white transition-colors"
+                      >
+                        Lihat Semua Berita →
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Right Column: Sidebar */}

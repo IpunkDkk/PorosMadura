@@ -14,11 +14,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: siteUrl, priority: 1.0, changeFrequency: 'hourly' as const },
+    { url: `${siteUrl}/perusahaan`, priority: 0.5, changeFrequency: 'monthly' as const },
     { url: `${siteUrl}/tentang-kami`, priority: 0.5, changeFrequency: 'monthly' as const },
-    { url: `${siteUrl}/redaksi`, priority: 0.5, changeFrequency: 'monthly' as const },
+    { url: `${siteUrl}/susunan-redaksi`, priority: 0.5, changeFrequency: 'monthly' as const },
     { url: `${siteUrl}/kontak`, priority: 0.5, changeFrequency: 'monthly' as const },
     { url: `${siteUrl}/pedoman-media-siber`, priority: 0.3, changeFrequency: 'yearly' as const },
-    { url: `${siteUrl}/privacy-policy`, priority: 0.3, changeFrequency: 'yearly' as const },
+    { url: `${siteUrl}/kebijakan-privasi`, priority: 0.3, changeFrequency: 'yearly' as const },
     { url: `${siteUrl}/disclaimer`, priority: 0.3, changeFrequency: 'yearly' as const },
   ]
 

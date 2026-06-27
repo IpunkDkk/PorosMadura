@@ -487,16 +487,71 @@ async function seed() {
       });
   }
 
-  await db
-    .insert(pages)
-    .values({
-      title: "Tentang Kami",
-      slug: "tentang-kami",
-      content: richText("Tentang PorosMadura", "Redaksi"),
+  const defaultPages = [
+    {
+      title: "Perusahaan",
+      slug: "perusahaan",
+      content: `<h1>Profil Perusahaan PorosMadura</h1><p>PorosMadura adalah media berita independen yang menyajikan informasi aktual, tepercaya, dan berimbang seputar Madura.</p><p>Kami berkomitmen menjadi jembatan informasi utama bagi warga Madura dan masyarakat luas.</p>`,
       status: "published",
       updatedAt: new Date(),
-    })
-    .onConflictDoNothing();
+    },
+    {
+      title: "Tentang Kami",
+      slug: "tentang-kami",
+      content: `<h1>Tentang Kami</h1><p>PorosMadura berkomitmen untuk memberikan pemberitaan terbaik mengenai dinamika sosial, ekonomi, politik, dan budaya di wilayah Madura.</p><p>Didukung oleh jurnalis profesional di lapangan, kami berfokus pada akurasi dan kredibilitas informasi.</p>`,
+      status: "published",
+      updatedAt: new Date(),
+    },
+    {
+      title: "Susunan Redaksi",
+      slug: "susunan-redaksi",
+      content: `<h1>Susunan Redaksi</h1><p><strong>Pemimpin Umum / Pemimpin Redaksi:</strong> Ipunk Dkk</p><p><strong>Redaktur Pelaksana:</strong> Tim PorosMadura</p><p><strong>Reporter:</strong> Kontributor PorosMadura di seluruh wilayah Kabupaten Madura (Bangkalan, Sampang, Pamekasan, Sumenep).</p>`,
+      status: "published",
+      updatedAt: new Date(),
+    },
+    {
+      title: "Pedoman Media Siber",
+      slug: "pedoman-media-siber",
+      content: `<h1>Pedoman Pemberitaan Media Siber</h1><p>Kemerdekaan berpendapat, kemerdekaan berekspresi, dan kemerdekaan pers adalah hak asasi manusia yang dilindungi Pancasila, Undang-Undang Dasar 1945, dan Deklarasi Universal Hak Asasi Manusia PBB.</p><p>Dalam melaksanakan tugasnya jurnalis PorosMadura mematuhi undang-undang pers dan kode etik jurnalistik demi menjaga netralitas dan profesionalisme.</p>`,
+      status: "published",
+      updatedAt: new Date(),
+    },
+    {
+      title: "Disclaimer",
+      slug: "disclaimer",
+      content: `<h1>Disclaimer</h1><p>Semua informasi di website PorosMadura diterbitkan dengan tujuan baik dan untuk informasi umum saja.</p><p>PorosMadura tidak bertanggung jawab atas segala kerugian dan/atau kerusakan sehubungan dengan penggunaan informasi di situs web kami.</p>`,
+      status: "published",
+      updatedAt: new Date(),
+    },
+    {
+      title: "Kebijakan Privasi",
+      slug: "kebijakan-privasi",
+      content: `<h1>Kebijakan Privasi</h1><p>Kebijakan privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi pribadi Anda ketika menggunakan layanan PorosMadura.</p><p>Kami berkomitmen menjaga kerahasiaan data pembaca kami sesuai dengan hukum perlindungan data yang berlaku.</p>`,
+      status: "published",
+      updatedAt: new Date(),
+    },
+    {
+      title: "Kontak",
+      slug: "kontak",
+      content: `<h1>Kontak Kami</h1><p>Silakan hubungi redaksi PorosMadura melalui saluran komunikasi resmi berikut:</p><p><strong>Email:</strong> redaksi@porosmadura.com</p><p>Kami menerima kiriman rilis berita, opini, maupun saran dan kritik yang membangun.</p>`,
+      status: "published",
+      updatedAt: new Date(),
+    },
+  ];
+
+  // Force clean/remove previous default pages to apply HTML content format
+  const pageSlugs = defaultPages.map(p => p.slug);
+  for (const pageSlug of pageSlugs) {
+    await db.delete(pages).where(eq(pages.slug, pageSlug));
+  }
+
+  // Insert refreshed seeds
+  for (const pageItem of defaultPages) {
+    await db
+      .insert(pages)
+      .values(pageItem)
+      .onConflictDoNothing();
+  }
 }
 
 seed()

@@ -60,7 +60,19 @@ export default async function CmsDashboardPage() {
                 <td className="px-4 py-3 font-semibold text-gray-900">{post.title || 'Tanpa judul'}</td>
                 <td className="px-4 py-3">{post.category?.name || '-'}</td>
                 <td className="px-4 py-3">{post.author?.name || '-'}</td>
-                <td className="px-4 py-3">{post.status || 'draft'}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase ${
+                    post.status === 'published'
+                      ? 'bg-green-100 text-green-700'
+                      : post.status === 'scheduled'
+                        ? 'bg-blue-100 text-blue-700'
+                        : post.status === 'archived'
+                          ? 'bg-rose-100 text-rose-700'
+                          : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {post.status || 'draft'}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/cms/posts/${post.id}`} className="font-bold text-poros-red hover:text-red-700">
                     Edit

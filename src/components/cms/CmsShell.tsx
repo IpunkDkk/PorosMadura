@@ -29,6 +29,7 @@ type CmsShellProps = {
 const breadcrumbLabels: Record<string, string> = {
   cms: 'CMS',
   posts: 'Artikel',
+  pages: 'Halaman',
   new: 'Baru',
   media: 'Media',
   ads: 'Iklan',
@@ -44,6 +45,7 @@ const breadcrumbLabels: Record<string, string> = {
 const navIcons = {
   dashboard: Gauge,
   posts: FileText,
+  pages: FileText,
   media: Image,
   ads: Megaphone,
   taxonomy: Tags,
@@ -139,15 +141,23 @@ export function CmsShell({ children, navItems, user }: CmsShellProps) {
 
                   {hasChildren && open && (
                     <div className="mt-1 flex gap-1 pl-3 lg:block lg:space-y-1 lg:pl-8">
-                      {item.children?.map((child) => (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          className="inline-flex min-h-9 shrink-0 items-center rounded-md px-3 py-2 text-xs font-semibold text-white/65 hover:bg-white/10 hover:text-white lg:w-full"
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                      {item.children?.map((child) => {
+                        const childActive = pathname === child.href
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold lg:w-full transition-colors ${
+                              childActive
+                                ? 'bg-white/20 text-white'
+                                : 'text-white/65 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            {childActive && <span className="h-1.5 w-1.5 rounded-full bg-poros-red shrink-0" />}
+                            {child.label}
+                          </Link>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -167,7 +177,7 @@ export function CmsShell({ children, navItems, user }: CmsShellProps) {
           <div className="flex min-h-16 flex-col justify-center gap-1 px-4 py-3 lg:px-8">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <nav className="mb-1 flex items-center gap-1 text-xs font-semibold text-text-secondary">
+                <nav className="flex items-center gap-1 text-xs font-semibold text-text-secondary">
                   {crumbs.map((crumb, index) => (
                     <span key={crumb.href} className="inline-flex items-center gap-1">
                       {index > 0 && <ChevronRight size={13} />}
@@ -181,9 +191,6 @@ export function CmsShell({ children, navItems, user }: CmsShellProps) {
                     </span>
                   ))}
                 </nav>
-                <h1 className="font-heading text-xl font-black text-poros-navy lg:text-2xl">
-                  {pageTitle(pathname)}
-                </h1>
               </div>
 
               <form action={cmsLogoutAction}>

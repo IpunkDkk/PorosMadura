@@ -61,11 +61,12 @@ export default async function Footer() {
             </h4>
             <ul className="space-y-3 text-sm text-gray-600 font-semibold">
               {[
+                ['Perusahaan', '/perusahaan'],
                 ['Tentang Kami', '/tentang-kami'],
-                ['Susunan Redaksi', '/redaksi'],
+                ['Susunan Redaksi', '/susunan-redaksi'],
                 ['Pedoman Media Siber', '/pedoman-media-siber'],
                 ['Disclaimer', '/disclaimer'],
-                ['Kebijakan Privasi', '/privacy-policy'],
+                ['Kebijakan Privasi', '/kebijakan-privasi'],
               ].map(([label, href]) => (
                 <li key={href}>
                   <Link href={href} className="hover:text-poros-red transition-colors">

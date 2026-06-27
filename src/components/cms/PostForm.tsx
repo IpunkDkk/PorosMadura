@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { Save, Trash2 } from 'lucide-react'
 import { createPostAction, deletePostAction, updatePostAction } from '@/lib/cms-admin'
-import { getMediaUrl } from '@/lib/media'
 import { RichTextEditor } from '@/components/cms/RichTextEditor'
+import { MediaPickerModal } from '@/components/cms/MediaPickerModal'
+import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
 
 type Option = {
   id: number
@@ -120,7 +121,7 @@ export function PostForm({
 
           <div>
             <label className="block text-sm font-semibold mb-2">Konten</label>
-            <RichTextEditor name="content" initialContent={contentToHtml(post?.content)} />
+            <RichTextEditor name="content" initialContent={contentToHtml(post?.content)} mediaItems={mediaItems} />
           </div>
         </div>
 
@@ -181,38 +182,20 @@ export function PostForm({
 
         <div className="bg-white border border-border-light rounded-lg p-5 space-y-4">
           <h2 className="font-heading text-lg font-bold">Gambar</h2>
-          {post?.featuredImageId && (
-            <div className="overflow-hidden rounded-md border border-border-light">
-              {mediaItems
-                .filter((item) => item.id === post.featuredImageId)
-                .map((item) => (
-                  <img
-                    key={item.id}
-                    src={getMediaUrl(item as Record<string, unknown>)}
-                    alt={item.alt || post.title || 'Featured image'}
-                    className="aspect-[16/9] w-full object-cover"
-                  />
-                ))}
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-semibold mb-2" htmlFor="featuredImageId">Featured image</label>
-            <select id="featuredImageId" name="featuredImageId" defaultValue={post?.featuredImageId || ''} className="w-full rounded-md border border-border-light px-3 py-2 text-sm bg-white">
-              <option value="">Tanpa gambar</option>
-              {mediaItems.map((item) => (
-                <option key={item.id} value={item.id}>{item.alt || item.filename}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2" htmlFor="ogImageId">OG image</label>
-            <select id="ogImageId" name="ogImageId" defaultValue={post?.ogImageId || ''} className="w-full rounded-md border border-border-light px-3 py-2 text-sm bg-white">
-              <option value="">Ikuti featured/default</option>
-              {mediaItems.map((item) => (
-                <option key={item.id} value={item.id}>{item.alt || item.filename}</option>
-              ))}
-            </select>
-          </div>
+          <MediaPickerModal
+            name="featuredImageId"
+            label="Featured Image"
+            mediaItems={mediaItems}
+            defaultValue={post?.featuredImageId}
+          />
+          <MediaPickerModal
+            name="ogImageId"
+            label="OG Image"
+            mediaItems={mediaItems}
+            defaultValue={post?.ogImageId}
+            hint="Opsional. Jika kosong, akan mengikuti featured image."
+            clearLabel="Ikuti featured / default"
+          />
         </div>
 
         <div className="bg-white border border-border-light rounded-lg p-5 space-y-4">
@@ -257,9 +240,11 @@ export function PostForm({
 
     {post?.id && (
       <form action={deletePostAction.bind(null, post.id as number)} className="mt-6 bg-white border border-red-200 rounded-lg p-5">
-        <button type="submit" className="inline-flex items-center gap-2 text-sm font-bold text-red-700 hover:text-red-900">
-          <Trash2 size={16} /> Hapus artikel
-        </button>
+        <CmsConfirmSubmit
+          label="Hapus artikel"
+          title="Hapus artikel?"
+          description="Artikel akan dihapus secara permanen dari database dan tidak dapat dipulihkan kembali."
+        />
       </form>
     )}
     </>

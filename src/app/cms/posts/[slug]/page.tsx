@@ -7,13 +7,12 @@ export const dynamic = 'force-dynamic'
 export default async function CmsEditPostPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
 }) {
-  const { id } = await params
-  const postId = Number(id)
-  if (!Number.isFinite(postId)) notFound()
+  const { slug } = await params
+  if (!slug) notFound()
 
-  const data = await getCmsPostFormData(postId)
+  const data = await getCmsPostFormData(slug)
   if (!data.post) notFound()
 
   return (
