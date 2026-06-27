@@ -267,6 +267,24 @@ export async function getPostBySlug(categorySlug: string, postSlug: string) {
   }
 }
 
+export async function getPostPreviewById(id: number) {
+  try {
+    const post = await db.query.posts.findFirst({
+      where: eq(posts.id, id),
+      with: {
+        featuredImage: true,
+        ogImage: true,
+        category: true,
+        author: true,
+        postTags: { with: { tag: true } },
+      },
+    })
+    return post ? normalizePostRow(post) : null
+  } catch {
+    return null
+  }
+}
+
 export async function getCategoryBySlug(slug: string) {
   try {
     return await db.query.categories.findFirst({

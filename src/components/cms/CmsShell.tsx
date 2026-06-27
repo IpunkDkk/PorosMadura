@@ -74,8 +74,19 @@ function pageTitle(pathname: string) {
 export function CmsShell({ children, navItems, user }: CmsShellProps) {
   const pathname = usePathname()
   const isLogin = pathname === '/cms/login'
+  const isFocusEditor = /^\/cms\/posts\/[^/]+\/focus$/.test(pathname)
   const crumbs = buildBreadcrumbs(pathname)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+
+  if (isFocusEditor) {
+    return (
+      <div className="min-h-screen bg-page-bg text-text-primary">
+        <main className="px-4 py-4 md:px-6">
+          {children}
+        </main>
+      </div>
+    )
+  }
 
   if (isLogin) {
     return (

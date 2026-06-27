@@ -6,6 +6,8 @@ import { MediaPickerModal } from '@/components/cms/MediaPickerModal'
 import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
 import { AiPostAssistant } from '@/components/cms/AiPostAssistant'
 import { PostAutosave } from '@/components/cms/PostAutosave'
+import { PostPreviewButton } from '@/components/cms/PostPreviewButton'
+import { PostFocusButton } from '@/components/cms/PostFocusButton'
 
 type Option = {
   id: number
@@ -150,6 +152,8 @@ export function PostForm({
           <Link href="/cms/posts" className="text-sm font-semibold text-text-secondary hover:text-poros-red">Kembali</Link>
           <div className="flex items-center gap-3">
             <PostAutosave postId={post?.id || null} />
+            <PostFocusButton slug={post?.slug || null} />
+            <PostPreviewButton postId={post?.id || null} />
             <button type="submit" className="inline-flex items-center gap-2 rounded-md bg-poros-red px-4 py-2 text-sm font-bold text-white hover:bg-red-700">
               <Save size={16} /> Simpan
             </button>

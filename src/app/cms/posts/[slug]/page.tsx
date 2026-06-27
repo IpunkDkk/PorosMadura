@@ -15,13 +15,19 @@ export default async function CmsEditPostPage({
 
   const data = await getCmsPostFormData(slug)
   if (!data.post) notFound()
-  const revisions = await getPostRevisions(data.post.id)
+  const revisions = (await getPostRevisions(data.post.id)).map((revision) => ({
+    ...revision,
+    createdAt: revision.createdAt instanceof Date ? revision.createdAt.toISOString() : revision.createdAt,
+  }))
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm font-bold uppercase text-poros-red">Artikel</p>
-        <h1 className="font-heading text-3xl font-black text-poros-navy">Edit Artikel</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold uppercase text-poros-red">Artikel</p>
+          <h1 className="font-heading text-3xl font-black text-poros-navy">Edit Artikel</h1>
+        </div>
+        <PostRevisionHistory postId={data.post.id} revisions={revisions} />
       </div>
       <PostForm
         post={data.post}
@@ -31,7 +37,6 @@ export default async function CmsEditPostPage({
         mediaItems={data.media}
         selectedTagIds={data.selectedTagIds}
       />
-      <PostRevisionHistory postId={data.post.id} revisions={revisions} />
     </div>
   )
 }

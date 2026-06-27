@@ -44,6 +44,8 @@ type RichTextEditorProps = {
   name: string
   initialContent?: string
   mediaItems?: MediaItem[]
+  onChange?: (html: string) => void
+  editorClassName?: string
 }
 
 type ToolbarButtonProps = {
@@ -117,7 +119,7 @@ const CustomImage = Image.extend({
   }
 })
 
-export function RichTextEditor({ name, initialContent = '', mediaItems = [] }: RichTextEditorProps) {
+export function RichTextEditor({ name, initialContent = '', mediaItems = [], onChange, editorClassName }: RichTextEditorProps) {
   const [html, setHtml] = useState(initialContent)
   
   // Modals visibility states
@@ -169,11 +171,13 @@ export function RichTextEditor({ name, initialContent = '', mediaItems = [] }: R
     content: initialContent,
     editorProps: {
       attributes: {
-        class: 'min-h-[420px] px-4 py-3 text-base leading-7 focus:outline-none prose max-w-none prose-red',
+        class: editorClassName || 'min-h-[420px] px-4 py-3 text-base leading-7 focus:outline-none prose max-w-none prose-red',
       },
     },
     onUpdate({ editor }) {
-      setHtml(editor.getHTML())
+      const nextHtml = editor.getHTML()
+      setHtml(nextHtml)
+      onChange?.(nextHtml)
     },
   })
 
@@ -187,11 +191,12 @@ export function RichTextEditor({ name, initialContent = '', mediaItems = [] }: R
 
       currentEditor.commands.setContent(detail.html)
       setHtml(detail.html)
+      onChange?.(detail.html)
     }
 
     window.addEventListener('cms:set-rich-text-content', handleSetContent)
     return () => window.removeEventListener('cms:set-rich-text-content', handleSetContent)
-  }, [editor, name])
+  }, [editor, name, onChange])
 
   // Open Link Modal with prefilled current selection URL (if exists)
   const openLinkModal = useCallback(() => {
