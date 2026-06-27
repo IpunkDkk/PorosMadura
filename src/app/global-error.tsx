@@ -15,21 +15,22 @@ export default function GlobalError({
           placeItems: 'center',
           padding: '24px',
           fontFamily: 'system-ui, sans-serif',
-          background: '#f8fafc',
+          background: '#f9fafb',
           color: '#111827',
         }}>
           <section style={{
             width: '100%',
             maxWidth: '520px',
             border: '1px solid #e5e7eb',
-            borderRadius: '12px',
+            borderLeft: '5px solid #C61E21',
+            borderRadius: '8px',
             background: '#ffffff',
             padding: '28px',
             boxShadow: '0 12px 30px rgba(15, 23, 42, 0.08)',
           }}>
             <p style={{
               margin: '0 0 8px',
-              color: '#b91c1c',
+              color: '#C61E21',
               fontSize: '13px',
               fontWeight: 800,
               textTransform: 'uppercase',
@@ -55,8 +56,8 @@ export default function GlobalError({
               onClick={reset}
               style={{
                 border: 0,
-                borderRadius: '8px',
-                background: '#b91c1c',
+              borderRadius: '6px',
+              background: '#C61E21',
                 color: '#ffffff',
                 cursor: 'pointer',
                 fontWeight: 800,
