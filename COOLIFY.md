@@ -40,7 +40,6 @@ Masukkan nilai-nilai berikut di tab **Environment Variables** di Coolify. Tandai
 DB_DATABASE=porosmadura
 
 # Secrets (Ganti dengan random string yang aman dan panjang)
-CMS_SESSION_SECRET=ganti_dengan_session_secret_random_dan_panjang
 CMS_ADMIN_EMAIL=admin@porosmadura.example.com
 CMS_ADMIN_PASSWORD=ganti_dengan_password_admin_yang_kuat
 BETTER_AUTH_SECRET=ganti_dengan_better_auth_secret_random_dan_panjang
