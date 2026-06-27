@@ -7,7 +7,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 FROM base AS dev
-RUN apk add --no-cache libc6-compat wget
+RUN apk add --no-cache libc6-compat wget tzdata
 WORKDIR /app
 ENV NODE_ENV=development \
     HOSTNAME=0.0.0.0 \
@@ -29,6 +29,7 @@ ARG GOOGLE_CLIENT_SECRET
 ARG MEILISEARCH_ENABLED
 ARG MEILISEARCH_HOST
 ARG MEILISEARCH_API_KEY
+ARG TZ
 ENV DATABASE_URI=$DATABASE_URI \
     REDIS_URL=$REDIS_URL \
     NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
@@ -39,6 +40,7 @@ ENV DATABASE_URI=$DATABASE_URI \
     MEILISEARCH_ENABLED=$MEILISEARCH_ENABLED \
     MEILISEARCH_HOST=$MEILISEARCH_HOST \
     MEILISEARCH_API_KEY=$MEILISEARCH_API_KEY \
+    TZ=${TZ:-Asia/Jakarta} \
     NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -57,6 +59,7 @@ ARG GOOGLE_CLIENT_SECRET
 ARG MEILISEARCH_ENABLED
 ARG MEILISEARCH_HOST
 ARG MEILISEARCH_API_KEY
+ARG TZ
 ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     DATABASE_URI=$DATABASE_URI \
@@ -69,6 +72,7 @@ ENV NODE_ENV=production \
     MEILISEARCH_ENABLED=$MEILISEARCH_ENABLED \
     MEILISEARCH_HOST=$MEILISEARCH_HOST \
     MEILISEARCH_API_KEY=$MEILISEARCH_API_KEY \
+    TZ=${TZ:-Asia/Jakarta} \
     NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs && \
@@ -79,8 +83,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# Install tools for health check and privilege drop after fixing mounted volume ownership
-RUN apk add --no-cache wget su-exec
+# Install tools for health check, timezone data, and privilege drop after fixing mounted volume ownership
+RUN apk add --no-cache wget su-exec tzdata
 
 # Source files needed for npm run seed (tsx reads .ts sources at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json

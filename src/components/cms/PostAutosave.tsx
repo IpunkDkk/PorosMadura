@@ -50,12 +50,14 @@ export function PostAutosave({ postId }: PostAutosaveProps) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastPayloadRef = useRef('')
+  const applyingAutosaveRef = useRef(false)
   const [state, setState] = useState<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>('idle')
   const [message, setMessage] = useState('Autosave aktif')
 
   useEffect(() => {
     const form = rootRef.current?.closest('form')
     if (!form) return
+    lastPayloadRef.current = JSON.stringify(collectPayload(form, postId))
 
     async function saveNow() {
       if (!form) return
@@ -80,23 +82,22 @@ export function PostAutosave({ postId }: PostAutosaveProps) {
           throw new Error(result.error || 'Autosave gagal')
         }
 
-        const hidden = form.querySelector<HTMLInputElement>('input[name="autosavePostId"]')
-        if (hidden) hidden.value = String(result.postId)
-        const slugField = form.querySelector<HTMLInputElement>('input[name="slug"]')
-        if (slugField && result.slug) {
-          slugField.value = String(result.slug)
-          slugField.dispatchEvent(new Event('input', { bubbles: true }))
-          slugField.dispatchEvent(new Event('change', { bubbles: true }))
+        applyingAutosaveRef.current = true
+        try {
+          const hidden = form.querySelector<HTMLInputElement>('input[name="autosavePostId"]')
+          if (hidden) hidden.value = String(result.postId)
+          const slugField = form.querySelector<HTMLInputElement>('input[name="slug"]')
+          if (slugField && result.slug) {
+            slugField.value = String(result.slug)
+          }
+        } finally {
+          applyingAutosaveRef.current = false
         }
         if (!postId && result.editUrl) {
           window.history.replaceState(null, '', result.editUrl)
         }
 
-        lastPayloadRef.current = JSON.stringify({
-          ...payload,
-          autosavePostId: String(result.postId),
-          slug: String(result.slug || payload.slug),
-        })
+        lastPayloadRef.current = JSON.stringify(collectPayload(form, postId))
         setState('saved')
         setMessage(`Tersimpan otomatis ${new Date(result.savedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`)
       } catch (error) {
@@ -106,6 +107,7 @@ export function PostAutosave({ postId }: PostAutosaveProps) {
     }
 
     function scheduleSave() {
+      if (applyingAutosaveRef.current) return
       setState((current) => current === 'saving' ? current : 'dirty')
       setMessage('Perubahan belum tersimpan')
       if (timeoutRef.current) clearTimeout(timeoutRef.current)

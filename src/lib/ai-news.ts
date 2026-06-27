@@ -377,7 +377,13 @@ function paragraphsToHtml(value: string) {
     .split(/\n\s*\n/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+    .map((paragraph) => {
+      const html = escapeHtml(paragraph).replace(/\n/g, '<br>')
+      const hasDirectQuote = /(["“])[^"“”]{12,}(["”])/.test(paragraph)
+      return hasDirectQuote
+        ? `<blockquote><p>${html}</p></blockquote>`
+        : `<p>${html}</p>`
+    })
     .join('\n\n')
 }
 

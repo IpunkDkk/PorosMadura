@@ -61,6 +61,7 @@ services:
         MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-true}
         MEILISEARCH_HOST: http://meilisearch:7700
         MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-}
+        TZ: ${TZ:-Asia/Jakarta}
         NINE_ROUTER_BASE_URL: ${NINE_ROUTER_BASE_URL:-}
         NINE_ROUTER_API_KEY: ${NINE_ROUTER_API_KEY:-}
         NINE_ROUTER_TEXT_MODEL: ${NINE_ROUTER_TEXT_MODEL:-}
@@ -68,6 +69,7 @@ services:
         NINE_ROUTER_IMAGE_MODEL: ${NINE_ROUTER_IMAGE_MODEL:-}
     restart: unless-stopped
     environment:
+      TZ: ${TZ:-Asia/Jakarta}
       PORT: 3000
       DATABASE_URI: postgres://porosmadura:${SERVICE_PASSWORD_db}@db:5432/${DB_DATABASE:-porosmadura}
       REDIS_URL: redis://redis:6379/0
