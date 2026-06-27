@@ -6,6 +6,18 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
+FROM base AS dev
+RUN apk add --no-cache libc6-compat wget
+WORKDIR /app
+ENV NODE_ENV=development \
+    HOSTNAME=0.0.0.0 \
+    NEXT_TELEMETRY_DISABLED=1
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json* ./
+EXPOSE 3000
+ENV PORT=3000
+CMD ["npm", "run", "dev"]
+
 FROM base AS builder
 ARG DATABASE_URI
 ARG REDIS_URL

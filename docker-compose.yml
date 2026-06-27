@@ -48,20 +48,7 @@ services:
   app:
     build:
       context: .
-      args:
-        DATABASE_URI: postgres://porosmadura:porosmadura@postgres:5432/porosmadura
-        REDIS_URL: redis://redis:6379
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3005}
-        CMS_SESSION_SECRET: ${CMS_SESSION_SECRET:-local-cms-session-secret}
-        BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-local-better-auth-secret}
-        BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3005}
-        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-        GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-        CMS_ADMIN_EMAIL: ${CMS_ADMIN_EMAIL:-admin@porosmadura.local}
-        CMS_ADMIN_PASSWORD: ${CMS_ADMIN_PASSWORD:-admin12345}
-        MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-true}
-        MEILISEARCH_HOST: http://meilisearch:7700
-        MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-master-key}
+      target: dev
     restart: unless-stopped
     ports:
       - "3005:3000"
@@ -81,6 +68,9 @@ services:
       CMS_ADMIN_EMAIL: ${CMS_ADMIN_EMAIL:-admin@porosmadura.local}
       CMS_ADMIN_PASSWORD: ${CMS_ADMIN_PASSWORD:-admin12345}
     volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+      - app_next:/app/.next
       - mediadata:/app/public/media
     depends_on:
       postgres:
@@ -101,3 +91,5 @@ volumes:
   redisdata:
   meilidata:
   mediadata:
+  app_node_modules:
+  app_next:
