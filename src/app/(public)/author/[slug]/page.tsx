@@ -1,4 +1,4 @@
-import { getAuthorBySlug, getPublishedPosts } from '@/lib/payload'
+import { getAuthorBySlug, getPublishedPosts } from '@/lib/custom-cms'
 import { getImageSizeUrl } from '@/lib/media'
 import { ArticleCard } from '@/components/article/ArticleCard'
 import { notFound } from 'next/navigation'
@@ -10,6 +10,8 @@ interface Props {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ page?: string }>
 }
+
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params

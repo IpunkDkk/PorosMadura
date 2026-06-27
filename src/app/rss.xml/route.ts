@@ -1,19 +1,11 @@
-import { getPayload } from 'payload'
-import config from '@/payload.config'
+import { getPublishedPosts } from '@/lib/custom-cms'
 
 export async function GET() {
-  const payload = await getPayload({ config })
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://porosmadura.com'
 
-  const { docs: posts } = await payload.find({
-    collection: 'posts',
+  const { docs: posts } = await getPublishedPosts({
     limit: 50,
-    where: {
-      status: { equals: 'published' },
-      publishedAt: { less_than_equal: new Date().toISOString() },
-    },
     sort: '-publishedAt',
-    depth: 2,
   })
 
   const items = (posts as Array<Record<string, unknown>>).map((post) => {

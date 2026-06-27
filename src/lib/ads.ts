@@ -1,5 +1,6 @@
-import type { BasePayload } from 'payload'
-import { getPayloadClient } from './payload'
+import { and, desc, eq, gte, lte } from 'drizzle-orm'
+import { db } from '@/db'
+import { ads, adSlots } from '@/db/schema'
 import { getCached, setCache } from './cache'
 import { CacheKeys } from './cache'
 
@@ -34,48 +35,38 @@ export async function getAdForPlacement(placement: string): Promise<AdResult> {
     try { return JSON.parse(cached) as AdResult } catch { /* ignore */ }
   }
 
-  const payload = await getPayloadClient()
+  const slot = await db.query.adSlots.findFirst({
+    where: and(eq(adSlots.placement, placement), eq(adSlots.isActive, true)),
+  }).catch(() => null)
 
-  // Cari slot dulu untuk dapat ID
-  const slotResult = await payload.find({
-    collection: 'ad-slots',
-    limit: 1,
-    where: { placement: { equals: placement } },
-    depth: 0,
-  })
-
-  if (!slotResult.docs[0]) {
+  if (!slot) {
     const emptyResult: EmptyAdResult = { type: 'empty', placement }
     await setCache(cacheKey, JSON.stringify(emptyResult), 300)
     return emptyResult
   }
 
-  const slot = slotResult.docs[0] as Record<string, unknown>
-  const slotId = slot.id
-
-  // Query ads berdasarkan slot ID (relationship)
-  const result = await payload.find({
-    collection: 'ads',
-    limit: 1,
-    where: {
-      placement: { equals: slotId },
-      status: { equals: 'active' },
-      startDate: { less_than_equal: new Date().toISOString() },
-      endDate: { greater_than_equal: new Date().toISOString() },
+  const activeAd = await db.query.ads.findFirst({
+    where: and(
+      eq(ads.placement, slot.placement),
+      eq(ads.status, 'active'),
+      lte(ads.startDate, new Date()),
+      gte(ads.endDate, new Date()),
+    ),
+    orderBy: desc(ads.priority),
+    with: {
+      imageDesktop: true,
+      imageMobile: true,
     },
-    sort: '-priority',
-    depth: 1,
-  })
+  }).catch(() => null)
 
-  if (result.docs.length > 0) {
-    const ad = result.docs[0] as Record<string, unknown>
+  if (activeAd) {
     const adResult: ManualAdResult = {
       type: 'manual',
-      id: ad.id as number | string,
-      title: String(ad.title || ''),
-      imageDesktop: (ad.imageDesktop as Record<string, unknown>) || null,
-      imageMobile: (ad.imageMobile as Record<string, unknown>) || null,
-      targetUrl: `/ads/click/${ad.id as string}`,
+      id: activeAd.id,
+      title: activeAd.title,
+      imageDesktop: activeAd.imageDesktop || null,
+      imageMobile: activeAd.imageMobile || null,
+      targetUrl: `/ads/click/${activeAd.id}`,
       placement,
     }
     await setCache(cacheKey, JSON.stringify(adResult), 300)

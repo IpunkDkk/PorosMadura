@@ -6,28 +6,26 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Patch: @better-auth/kysely-adapter imports DEFAULT_MIGRATION_* from "kysely"
-# barrel, but kysely only exports them from "kysely/migration".
-# Adding re-exports from migration module to the main barrel file.
-RUN echo 'export { DEFAULT_MIGRATION_TABLE, DEFAULT_MIGRATION_LOCK_TABLE } from "./migration/migrator.js";' \
-      >> /app/node_modules/kysely/dist/index.js
-
 FROM base AS builder
 ARG DATABASE_URI
-ARG PAYLOAD_SECRET
 ARG REDIS_URL
 ARG NEXT_PUBLIC_SITE_URL
+ARG CMS_SESSION_SECRET
 ARG BETTER_AUTH_SECRET
 ARG BETTER_AUTH_URL
+ARG GOOGLE_CLIENT_ID
+ARG GOOGLE_CLIENT_SECRET
 ARG MEILISEARCH_ENABLED
 ARG MEILISEARCH_HOST
 ARG MEILISEARCH_API_KEY
 ENV DATABASE_URI=$DATABASE_URI \
-    PAYLOAD_SECRET=$PAYLOAD_SECRET \
     REDIS_URL=$REDIS_URL \
     NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    CMS_SESSION_SECRET=$CMS_SESSION_SECRET \
     BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET \
     BETTER_AUTH_URL=$BETTER_AUTH_URL \
+    GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
+    GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET \
     MEILISEARCH_ENABLED=$MEILISEARCH_ENABLED \
     MEILISEARCH_HOST=$MEILISEARCH_HOST \
     MEILISEARCH_API_KEY=$MEILISEARCH_API_KEY \
@@ -40,22 +38,26 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 ARG DATABASE_URI
-ARG PAYLOAD_SECRET
 ARG REDIS_URL
 ARG NEXT_PUBLIC_SITE_URL
+ARG CMS_SESSION_SECRET
 ARG BETTER_AUTH_SECRET
 ARG BETTER_AUTH_URL
+ARG GOOGLE_CLIENT_ID
+ARG GOOGLE_CLIENT_SECRET
 ARG MEILISEARCH_ENABLED
 ARG MEILISEARCH_HOST
 ARG MEILISEARCH_API_KEY
 ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     DATABASE_URI=$DATABASE_URI \
-    PAYLOAD_SECRET=$PAYLOAD_SECRET \
     REDIS_URL=$REDIS_URL \
     NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    CMS_SESSION_SECRET=$CMS_SESSION_SECRET \
     BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET \
     BETTER_AUTH_URL=$BETTER_AUTH_URL \
+    GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
+    GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET \
     MEILISEARCH_ENABLED=$MEILISEARCH_ENABLED \
     MEILISEARCH_HOST=$MEILISEARCH_HOST \
     MEILISEARCH_API_KEY=$MEILISEARCH_API_KEY \
@@ -67,24 +69,22 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# Install tools for health check and seed script
-RUN apk add --no-cache wget && \
-    npm install -g tsx@^4.22.4
-
-# Install packages needed by seed script that aren't in standalone trace
-RUN npm install @next/env
+# Install tools for health check and privilege drop after fixing mounted volume ownership
+RUN apk add --no-cache wget su-exec
 
 # Source files needed for npm run seed (tsx reads .ts sources at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
 COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 
-USER nextjs
 EXPOSE 3000
-ENV PORT 3000
+ENV PORT=3000
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=90s \
   CMD wget --spider http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "chown -R nextjs:nodejs /app/public/media && exec su-exec nextjs:nodejs node server.js"]

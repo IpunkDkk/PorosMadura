@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getPublishedPosts } from '@/lib/payload'
+import { getPublishedPosts } from '@/lib/custom-cms'
 import { BreakingNews } from '@/components/article/BreakingNews'
 import { HeroNews } from '@/components/article/HeroNews'
 import { ArticleCard } from '@/components/article/ArticleCard'
@@ -12,6 +12,7 @@ import { normalizePost } from '@/lib/cms'
 import AdSlot from '@/components/ads/AdSlot'
 
 export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'PorosMadura | Berita Tepat, Fakta Kuat',

@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer'
 import MobileStickyAd from '@/components/ads/MobileStickyAd'
 import PopupCampaign from '@/components/ads/PopupCampaign'
 import AdSlot from '@/components/ads/AdSlot'
-import { getSiteSettings } from '@/lib/payload'
+import { getSiteSettings } from '@/lib/custom-cms'
 import { getSettingsOgImage, normalizeSettings } from '@/lib/cms'
 
 const inter = Inter({

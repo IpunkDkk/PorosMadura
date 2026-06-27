@@ -1,4 +1,4 @@
-import { getTagBySlug, getPublishedPosts } from '@/lib/payload'
+import { getTagBySlug, getPublishedPosts } from '@/lib/custom-cms'
 import { ArticleCard } from '@/components/article/ArticleCard'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -8,6 +8,8 @@ interface Props {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ page?: string }>
 }
+
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params

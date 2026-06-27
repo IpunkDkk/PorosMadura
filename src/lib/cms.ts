@@ -1,4 +1,3 @@
-import { convertLexicalToHTMLAsync } from '@payloadcms/richtext-lexical/html-async'
 import { getImageSizeUrl } from '@/lib/media'
 
 export interface PublicCategory {
@@ -97,16 +96,74 @@ export function normalizeSettings(value: unknown): PublicSettings {
   }
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function renderLexicalChildren(children: unknown): string {
+  if (!Array.isArray(children)) return ''
+  return children.map(renderLexicalNode).join('')
+}
+
+function renderTextNode(node: Record<string, unknown>) {
+  let html = escapeHtml(String(node.text || ''))
+  const format = typeof node.format === 'number' ? node.format : 0
+
+  if (format & 1) html = `<strong>${html}</strong>`
+  if (format & 2) html = `<em>${html}</em>`
+  if (format & 4) html = `<s>${html}</s>`
+  if (format & 8) html = `<u>${html}</u>`
+  if (format & 16) html = `<code>${html}</code>`
+
+  return html
+}
+
+function renderLexicalNode(value: unknown): string {
+  const node = asRecord(value)
+  const type = String(node.type || '')
+
+  if (type === 'text') return renderTextNode(node)
+
+  const children = renderLexicalChildren(node.children)
+  if (!children && type !== 'linebreak') return ''
+
+  if (type === 'linebreak') return '<br />'
+  if (type === 'heading') {
+    const tag = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(String(node.tag))
+      ? String(node.tag)
+      : 'h2'
+    return `<${tag}>${children}</${tag}>`
+  }
+  if (type === 'paragraph') return `<p>${children}</p>`
+  if (type === 'quote') return `<blockquote>${children}</blockquote>`
+  if (type === 'list') {
+    const tag = node.listType === 'number' ? 'ol' : 'ul'
+    return `<${tag}>${children}</${tag}>`
+  }
+  if (type === 'listitem') return `<li>${children}</li>`
+  if (type === 'link') {
+    const url = typeof node.url === 'string' ? node.url : '#'
+    const safeUrl = escapeHtml(url)
+    return `<a href="${safeUrl}" rel="noopener noreferrer">${children}</a>`
+  }
+
+  return children
+}
+
 export async function renderRichText(content: unknown): Promise<string> {
+  if (typeof content === 'string') return content || '<p>Konten belum tersedia.</p>'
+
   const lexicalContent = asRecord(content)
   if (!lexicalContent.root) return '<p>Konten belum tersedia.</p>'
 
-  try {
-    const html = await convertLexicalToHTMLAsync({ data: lexicalContent as any })
-    return html || '<p>Konten belum tersedia.</p>'
-  } catch {
-    return '<p>Konten belum tersedia.</p>'
-  }
+  const root = asRecord(lexicalContent.root)
+  const html = renderLexicalChildren(root.children)
+  return html || '<p>Konten belum tersedia.</p>'
 }
 
 export function getSettingsOgImage(settings: PublicSettings): string {

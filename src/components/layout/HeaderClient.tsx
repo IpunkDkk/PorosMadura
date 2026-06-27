@@ -18,10 +18,9 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
   const pathname = usePathname()
 
   useEffect(() => {
-    // Deteksi session Payload admin dari cookie payload-token
     const hasToken = document.cookie
       .split('; ')
-      .some((row) => row.startsWith('payload-token='))
+      .some((row) => row.startsWith('better-auth.session_token='))
     setIsAdmin(hasToken)
   }, [])
 
@@ -62,7 +61,7 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
               <span className="text-sm text-white/80 font-medium">{today}</span>
               <div className="h-4 w-px bg-white/20" />
               {isAdmin && (
-                <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors font-medium" title="Dashboard Admin">
+                <Link href="/cms" className="text-sm text-white/70 hover:text-poros-red transition-colors font-medium" title="Dashboard Admin">
                   Dashboard
                 </Link>
               )}
@@ -74,7 +73,7 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
 
             <div className="lg:hidden flex items-center gap-4">
               {isAdmin && (
-                <Link href="/admin" className="text-sm text-white/70 hover:text-poros-red transition-colors" title="Dashboard Admin">
+                <Link href="/cms" className="text-sm text-white/70 hover:text-poros-red transition-colors" title="Dashboard Admin">
                   Dashboard
                 </Link>
               )}

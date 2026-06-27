@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Calendar, Clock, User } from 'lucide-react'
-import { getPageBySlug, getPostBySlug, getPublishedPosts } from '@/lib/payload'
+import { getPageBySlug, getPostBySlug, getPublishedPosts } from '@/lib/custom-cms'
 import { getImageSizeUrl } from '@/lib/media'
 import { asRecord, renderRichText, normalizePost } from '@/lib/cms'
 import AdSlot from '@/components/ads/AdSlot'
@@ -11,6 +11,8 @@ import { PopularPosts } from '@/components/sidebar/PopularPosts'
 interface Props {
   params: Promise<{ segments?: string[] }>
 }
+
+export const dynamic = 'force-dynamic'
 
 function getSegments(params: { segments?: string[] }) {
   return params.segments || []

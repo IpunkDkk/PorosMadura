@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getActiveCategories, getSiteSettings } from '@/lib/payload'
+import { getActiveCategories, getSiteSettings } from '@/lib/custom-cms'
 import { normalizeCategory, normalizeSettings, type PublicCategory } from '@/lib/cms'
 import { getMediaUrl } from '@/lib/media'
 

@@ -1,4 +1,4 @@
-import { getPublishedPosts } from '@/lib/payload'
+import { getPublishedPosts } from '@/lib/custom-cms'
 import { normalizePost } from '@/lib/cms'
 import { ArticleCard } from '@/components/article/ArticleCard'
 

@@ -1,4 +1,4 @@
-import { getActiveCategories, getPublishedPosts } from '@/lib/payload'
+import { getActiveCategories, getPublishedPosts } from '@/lib/custom-cms'
 import { normalizeCategory, normalizePost } from '@/lib/cms'
 import { ArticleCard } from '@/components/article/ArticleCard'
 import Link from 'next/link'

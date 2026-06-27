@@ -1,5 +1,5 @@
 import { searchPosts } from '@/lib/search'
-import { searchPublishedPostsFallback } from '@/lib/payload'
+import { searchPublishedPostsFallback } from '@/lib/custom-cms'
 import { getImageSizeUrl } from '@/lib/media'
 import { normalizePost } from '@/lib/cms'
 import { NextResponse } from 'next/server'

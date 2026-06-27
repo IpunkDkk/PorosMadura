@@ -3,9 +3,9 @@ export function getMediaUrl(media: Record<string, unknown> | string | null | und
   if (typeof media === 'string') return media
 
   const rec = media as Record<string, unknown>
-  // Payload v3 nyimpen url absolut di field `url`
+  // Data lama bisa berisi url absolut dari CMS sebelumnya.
   // Contoh: http://localhost:3000/api/media/file/image.png
-  // Kita pake url dari record dulu, baru fallback ke filename
+  // Kita pakai url dari record dulu, baru fallback ke filename.
   const storedUrl =
     typeof rec.url === 'string'
       ? rec.url

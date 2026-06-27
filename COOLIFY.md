@@ -4,7 +4,7 @@ Deployment menggunakan Docker Compose dengan empat service utama:
 
 | Service | Fungsi | Public | Port Internal |
 |---|---|---|---|
-| `app` | Next.js 15 Monolith + Payload CMS 3 | Ya | `3000` |
+| `app` | Next.js 15 Monolith + Custom CMS | Ya | `3000` |
 | `db` | PostgreSQL 16 Database | Tidak | `5432` |
 | `redis` | Redis Cache & Queue | Tidak | `6379` |
 | `meilisearch` | Meilisearch Full-Text Search | Tidak | `7700` |
@@ -40,8 +40,14 @@ Masukkan nilai-nilai berikut di tab **Environment Variables** di Coolify. Tandai
 DB_DATABASE=porosmadura
 
 # Secrets (Ganti dengan random string yang aman dan panjang)
-PAYLOAD_SECRET=ganti_dengan_payload_secret_random_dan_panjang
+CMS_SESSION_SECRET=ganti_dengan_session_secret_random_dan_panjang
+CMS_ADMIN_EMAIL=admin@porosmadura.example.com
+CMS_ADMIN_PASSWORD=ganti_dengan_password_admin_yang_kuat
 BETTER_AUTH_SECRET=ganti_dengan_better_auth_secret_random_dan_panjang
+
+# Google OAuth (opsional, isi saat fitur login Google diaktifkan)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
 # Meilisearch API Key (Harus minimal 16 karakter)
 MEILISEARCH_API_KEY=ganti_dengan_api_key_meilisearch_minimal_16_karakter
@@ -57,7 +63,7 @@ NEXT_PUBLIC_SITE_URL=https://porosmadura.example.com
 > Berkas [docker-compose.coolify.yml](file:///home/agung/Project/Laravel/porosmadura/docker-compose.coolify.yml) akan merakit URL koneksi ke database internal secara otomatis dengan format: `postgres://porosmadura:${SERVICE_PASSWORD_db}@db:5432/${DB_DATABASE:-porosmadura}`.
 
 > [!NOTE]
-> `NEXT_PUBLIC_SITE_URL` akan digunakan sebagai parameter build arguments dan env vars untuk Next.js dan juga untuk `BETTER_AUTH_URL` secara otomatis.
+> `NEXT_PUBLIC_SITE_URL` akan digunakan sebagai parameter build arguments dan env vars untuk Next.js.
 
 ## 4. Konfigurasi Domain Service
 
@@ -74,7 +80,7 @@ Coolify secara otomatis mengonfigurasi reverse proxy (Traefik/Nginx) dan menguru
 2. Setelah deployment berstatus healthy, verifikasi service dengan membuka URL berikut di browser atau command line:
    - Frontend: `https://porosmadura.example.com`
    - Healthcheck: `https://porosmadura.example.com/api/health`
-   - Payload Admin Login: `https://porosmadura.example.com/admin`
+   - Custom CMS Login: `https://porosmadura.example.com/cms/login`
 
 ## 6. Seed Database & Migration (Opsional)
 
