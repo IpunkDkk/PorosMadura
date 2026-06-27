@@ -426,13 +426,16 @@ export async function generateAiPostDraft(
   const pipeline: string[] = ['scrape']
 
   await onProgress?.({ stage: 'article', progress: 35, message: 'Menulis draft artikel CMS' })
-  const article = await generateJson(
-    `Anda adalah editor berita Poros Madura. Tulis ulang artikel sumber menjadi artikel CMS yang lengkap, akurat, dan siap diedit.
+  let article = await generateJson(
+    `Anda adalah editor berita Poros Madura. Susun draft artikel CMS yang lengkap, akurat, dan siap diedit dari bahan sumber.
 Aturan mutlak:
 - Gunakan hanya fakta dari SOURCE CONTENT.
 - Jangan mengarang nama, jabatan, lokasi, tanggal, angka, kutipan, atau dampak.
 - Pertahankan semua informasi inti yang relevan dari sumber.
 - Gaya bahasa Indonesia newsroom, netral, padat, dan mudah dibaca.
+- title harus berbeda dari SOURCE TITLE kecuali nama resmi atau istilah kunci.
+- Jangan menyalin urutan paragraf sumber secara mentah.
+- Kutipan langsung boleh dipertahankan apa adanya, tetapi narasi di luar kutipan harus ditulis ulang.
 - content harus 5-9 paragraf, dipisah newline ganda, bukan HTML.
 - excerpt maksimal 160 karakter.
 - category pilih salah satu: viral, kriminal, politik, olahraga, hiburan, kesehatan, ekonomi, nasional, internasional, teknologi, bencana, breaking news.
@@ -443,7 +446,30 @@ Aturan mutlak:
   )
   pipeline.push('article')
 
-  await onProgress?.({ stage: 'seo', progress: 65, message: 'Menyusun judul SEO, deskripsi, slug, dan kata kunci' })
+  await onProgress?.({ stage: 'rewrite', progress: 52, message: 'Mengubah struktur dan diksi agar tidak terlalu mirip sumber' })
+  article = await generateJson(
+    `Anda adalah editor orisinalitas Poros Madura. Revisi draft agar substansinya tetap akurat tetapi struktur dan pilihan katanya berbeda jelas dari artikel sumber.
+Aturan mutlak:
+- Gunakan hanya fakta dari SOURCE CONTENT dan DRAFT.
+- Jangan menambah klaim, opini, konteks, nama, jabatan, tanggal, angka, lokasi, atau kutipan baru.
+- Ubah susunan informasi: jangan mengikuti urutan paragraf sumber jika tidak perlu.
+- Ubah title agar tidak identik dengan SOURCE TITLE, tetapi tetap faktual dan layak berita.
+- Ubah struktur kalimat, pembuka paragraf, transisi, dan pilihan kata narasi.
+- Gabungkan atau pecah paragraf bila membantu membuat alur baru.
+- Hindari frasa naratif non-kutipan yang sama dengan sumber lebih dari 8 kata berurutan.
+- Nama orang, lembaga, jabatan, tempat, angka, tanggal, istilah resmi, dan kutipan langsung boleh tetap sama.
+- Kutipan langsung harus tetap akurat dan jangan diparafrasekan sebagai kutipan.
+- Tetap gaya newsroom Indonesia yang netral, padat, dan mudah dibaca.
+- content harus 5-9 paragraf, dipisah newline ganda, bukan HTML.
+- excerpt maksimal 160 karakter.
+- Pertahankan category dan tagNames jika masih relevan.`,
+    `${sourcePayload}\n\nDRAFT SAAT INI:\n${JSON.stringify(article)}\n\nJSON field wajib: title, excerpt, content, category, tagNames.`,
+    4200,
+    'title, excerpt, content, category, tagNames',
+  )
+  pipeline.push('rewrite')
+
+  await onProgress?.({ stage: 'seo', progress: 70, message: 'Menyusun judul SEO, deskripsi, slug, dan kata kunci' })
   const seo = await generateJson(
     `Anda spesialis SEO Poros Madura. Buat metadata SEO dari draft artikel tanpa menambah fakta baru.
 Aturan:
@@ -457,7 +483,7 @@ Aturan:
   )
   pipeline.push('seo')
 
-  await onProgress?.({ stage: 'social', progress: 82, message: 'Membuat caption sosial dan prompt gambar' })
+  await onProgress?.({ stage: 'social', progress: 84, message: 'Membuat caption sosial dan prompt gambar' })
   const social = await generateJson(
     `Anda social media editor Poros Madura. Buat pendukung distribusi sosial dari draft, tanpa menambah fakta baru.
 Aturan:
