@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "seed": "tsx src/db/seed-custom.ts",
     "seed:custom": "tsx src/db/seed-custom.ts",
+    "seed:cleanup-demo": "tsx src/db/cleanup-demo-content.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "tsx src/db/migrate-custom.ts",
     "db:push": "drizzle-kit push --config=drizzle.config.ts",

@@ -41,6 +41,19 @@ const [{ db }, { hashCmsPassword }, { auth }] = await Promise.all([
 ]);
 
 const now = Date.now();
+const isProduction = process.env.NODE_ENV === "production";
+const seedDemoContent = process.env.SEED_DEMO_CONTENT === "true";
+const seedStaticPages = process.env.SEED_STATIC_PAGES !== "false";
+const overwriteStaticPages = process.env.SEED_OVERWRITE_STATIC_PAGES === "true";
+const seedAdSlots = process.env.SEED_AD_SLOTS !== "false";
+
+function requireProductionValue(key: string) {
+  const value = process.env[key]?.trim();
+  if (!value && isProduction) {
+    throw new Error(`${key} wajib diisi untuk production seed.`);
+  }
+  return value;
+}
 
 const seedCategories = [
   { name: "Nasional", order: 1 },
@@ -299,6 +312,10 @@ function richText(title: string, category: string) {
 }
 
 async function seed() {
+  console.log(
+    `Running seed (${isProduction ? "production" : "development"}) with demo=${seedDemoContent}, staticPages=${seedStaticPages}, overwriteStaticPages=${overwriteStaticPages}, adSlots=${seedAdSlots}`,
+  );
+
   const categoryMap = new Map<string, number>();
   for (const category of seedCategories) {
     const slug = slugify(category.name);
@@ -327,7 +344,15 @@ async function seed() {
   }
 
   const authorMap = new Map<string, number>();
-  for (const author of seedAuthors) {
+  const authorsToSeed = seedDemoContent
+    ? seedAuthors
+    : [
+        {
+          name: "Redaksi PorosMadura",
+          bio: "Tim redaksi PorosMadura.",
+        },
+      ];
+  for (const author of authorsToSeed) {
     const slug = slugify(author.name);
     const [row] = await db
       .insert(authors)
@@ -346,7 +371,8 @@ async function seed() {
   }
 
   const tagMap = new Map<string, number>();
-  for (const tagName of seedTags) {
+  const tagsToSeed = seedDemoContent ? seedTags : [];
+  for (const tagName of tagsToSeed) {
     const slug = slugify(tagName);
     const [row] = await db
       .insert(tags)
@@ -370,7 +396,7 @@ async function seed() {
     tagMap.set(tagName, row.id);
   }
 
-  for (const post of seedPosts) {
+  if (seedDemoContent) for (const post of seedPosts) {
     const slug = slugify(post.title);
     const categoryId = categoryMap.get(post.category);
     const authorId = authorMap.get(post.author);
@@ -444,8 +470,11 @@ async function seed() {
     })
     .onConflictDoNothing();
 
-  const adminEmail = process.env.CMS_ADMIN_EMAIL || "admin@email.com";
-  const adminPassword = process.env.CMS_ADMIN_PASSWORD || "password";
+  const adminEmail = requireProductionValue("CMS_ADMIN_EMAIL") || "admin@porosmadura.local";
+  const adminPassword = requireProductionValue("CMS_ADMIN_PASSWORD") || "admin12345";
+  if (isProduction && adminPassword.length < 12) {
+    throw new Error("CMS_ADMIN_PASSWORD production minimal 12 karakter.");
+  }
   const adminName = "Admin PorosMadura";
   await db
     .insert(users)
@@ -472,7 +501,7 @@ async function seed() {
     /* Better Auth account already exists. */
   }
 
-  for (const slot of defaultSlots) {
+  if (seedAdSlots) for (const slot of defaultSlots) {
     await db
       .insert(adSlots)
       .values({ ...slot, isActive: true, updatedAt: new Date() })
@@ -539,18 +568,23 @@ async function seed() {
     },
   ];
 
-  // Force clean/remove previous default pages to apply HTML content format
-  const pageSlugs = defaultPages.map(p => p.slug);
-  for (const pageSlug of pageSlugs) {
-    await db.delete(pages).where(eq(pages.slug, pageSlug));
-  }
-
-  // Insert refreshed seeds
-  for (const pageItem of defaultPages) {
-    await db
-      .insert(pages)
-      .values(pageItem)
-      .onConflictDoNothing();
+  if (seedStaticPages) {
+    for (const pageItem of defaultPages) {
+      const insert = db.insert(pages).values(pageItem);
+      if (overwriteStaticPages) {
+        await insert.onConflictDoUpdate({
+          target: pages.slug,
+          set: {
+            title: pageItem.title,
+            content: pageItem.content,
+            status: pageItem.status,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        await insert.onConflictDoNothing();
+      }
+    }
   }
 }
 
