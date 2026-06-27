@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { getImageSizeUrl } from '@/lib/media'
 import { formatRelativeTime } from '@/components/article/HeroNews'
 
@@ -28,10 +29,12 @@ export function ArticleCard({
         href={`/${category?.slug ?? 'uncategorized'}/${slug}`}
         className="w-full sm:w-2/5 aspect-[16/9] sm:aspect-[4/3] rounded-xl overflow-hidden relative shrink-0"
       >
-        <img
+        <Image
           src={getImageSizeUrl(featuredImage as Record<string, unknown> | null | undefined, 'card')}
           alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          sizes="(min-width: 640px) 40vw, 100vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
       </Link>
       {/* Content */}

@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
-import { Upload, X, Copy, Check, Image as ImageIcon } from 'lucide-react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import Image from 'next/image'
+import { Upload, X, Copy, Check, Image as ImageIcon, AlertCircle, Loader2, RotateCcw } from 'lucide-react'
 import { deleteMediaAction, uploadMediaAction } from '@/lib/cms-admin'
 import { getMediaUrl } from '@/lib/media'
 import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 type MediaItem = {
   id: number
@@ -24,6 +27,16 @@ function formatBytes(bytes: number | null | undefined) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function isNextRedirectError(error: unknown) {
+  return Boolean(
+    typeof error === 'object' &&
+      error &&
+      'digest' in error &&
+      typeof (error as { digest?: unknown }).digest === 'string' &&
+      (error as { digest: string }).digest.startsWith('NEXT_REDIRECT'),
+  )
 }
 
 function MediaDetailModal({ item, onClose }: { item: MediaItem; onClose: () => void }) {
@@ -48,7 +61,13 @@ function MediaDetailModal({ item, onClose }: { item: MediaItem; onClose: () => v
 
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="bg-gray-100 flex items-center justify-center min-h-[200px] max-h-[360px] p-2">
-            <img src={url} alt={item.alt || ''} className="max-h-[340px] max-w-full object-contain rounded-lg" />
+            <Image
+              src={url}
+              alt={item.alt || ''}
+              width={640}
+              height={480}
+              className="max-h-[340px] max-w-full object-contain rounded-lg"
+            />
           </div>
           <div className="p-5 space-y-4 flex flex-col justify-between">
             <div className="space-y-4">
@@ -126,7 +145,81 @@ export function MediaGrid({ initialItems }: { initialItems: MediaItem[] }) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [fileName, setFileName] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [previewDimensions, setPreviewDimensions] = useState<{ width: number; height: number } | null>(null)
+  const [uploadError, setUploadError] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const previewObjectUrlRef = useRef('')
+
+  useEffect(() => {
+    return () => {
+      if (previewObjectUrlRef.current) URL.revokeObjectURL(previewObjectUrlRef.current)
+    }
+  }, [])
+
+  const setInputFile = useCallback((file: File) => {
+    if (!fileInputRef.current) return
+    const dt = new DataTransfer()
+    dt.items.add(file)
+    fileInputRef.current.files = dt.files
+  }, [])
+
+  const resetFileSelection = useCallback(() => {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current)
+      previewObjectUrlRef.current = ''
+    }
+    setSelectedFile(null)
+    setFileName('')
+    setPreviewUrl('')
+    setPreviewDimensions(null)
+    setUploadError('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [])
+
+  const chooseFile = useCallback((file: File | undefined, syncInput = false) => {
+    setUploadError('')
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      resetFileSelection()
+      setUploadError('File harus berupa gambar.')
+      return
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      resetFileSelection()
+      setUploadError('Ukuran file maksimal 10MB.')
+      return
+    }
+
+    setSelectedFile(file)
+    setFileName(file.name)
+    if (previewObjectUrlRef.current) URL.revokeObjectURL(previewObjectUrlRef.current)
+    const objectUrl = URL.createObjectURL(file)
+    previewObjectUrlRef.current = objectUrl
+    setPreviewUrl(objectUrl)
+    setPreviewDimensions(null)
+
+    const previewImage = new window.Image()
+    previewImage.onload = () => {
+      if (previewObjectUrlRef.current !== objectUrl) return
+      setPreviewDimensions({
+        width: previewImage.naturalWidth,
+        height: previewImage.naturalHeight,
+      })
+    }
+    previewImage.onerror = () => {
+      if (previewObjectUrlRef.current !== objectUrl) return
+      resetFileSelection()
+      setUploadError('Preview gambar gagal dibaca.')
+    }
+    previewImage.src = objectUrl
+
+    if (syncInput) setInputFile(file)
+  }, [resetFileSelection, setInputFile])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -142,15 +235,8 @@ export function MediaGrid({ initialItems }: { initialItems: MediaItem[] }) {
     e.preventDefault()
     setIsDragging(false)
     const file = e.dataTransfer.files[0]
-    if (!file || !formRef.current) return
-    const dt = new DataTransfer()
-    dt.items.add(file)
-    const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement
-    if (fileInput) {
-      fileInput.files = dt.files
-      setFileName(file.name)
-    }
-  }, [])
+    chooseFile(file, true)
+  }, [chooseFile])
 
   return (
     <div className="space-y-6">
@@ -160,12 +246,19 @@ export function MediaGrid({ initialItems }: { initialItems: MediaItem[] }) {
         <form
           ref={formRef}
           action={async (formData: FormData) => {
+            setUploadError('')
             setIsUploading(true)
-            await uploadMediaAction(formData)
-            setIsUploading(false)
-            setFileName('')
-            if (formRef.current) formRef.current.reset()
-            window.location.reload() // Reload page to fetch updated list
+            try {
+              await uploadMediaAction(formData)
+              resetFileSelection()
+              if (formRef.current) formRef.current.reset()
+              window.location.reload()
+            } catch (error) {
+              if (isNextRedirectError(error)) throw error
+              setUploadError(error instanceof Error ? error.message : 'Upload gagal. Coba ulangi.')
+            } finally {
+              setIsUploading(false)
+            }
           }}
           className="space-y-4"
         >
@@ -173,35 +266,72 @@ export function MediaGrid({ initialItems }: { initialItems: MediaItem[] }) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
+            className={`relative grid gap-4 rounded-xl border-2 border-dashed p-4 transition-colors md:grid-cols-[minmax(0,1fr)_260px] ${
               isDragging
                 ? 'border-poros-red bg-red-50'
                 : 'border-border-light hover:border-poros-red/50 hover:bg-gray-50'
             }`}
           >
-            <Upload size={32} className={isDragging ? 'text-poros-red' : 'text-gray-400'} />
-            <p className="mt-2 text-sm font-semibold text-text-secondary">
-              {fileName ? `File terpilih: ${fileName}` : 'Drag & drop file di sini, atau'}
-            </p>
-            <label className="mt-2 cursor-pointer">
-              <span className="rounded-lg bg-poros-red px-4 py-2 text-sm font-bold text-white hover:bg-red-700 transition-colors">
-                Pilih File
-              </span>
-              <input
-                name="file"
-                type="file"
-                accept="image/*"
-                required
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    setFileName(e.target.files[0].name)
-                  }
-                }}
-              />
-            </label>
-            <p className="mt-2 text-xs text-gray-400">PNG, JPG, WebP, GIF hingga 10MB</p>
+            <div className="flex min-h-[180px] flex-col items-center justify-center text-center">
+              <Upload size={34} className={isDragging ? 'text-poros-red' : 'text-gray-400'} />
+              <p className="mt-3 text-sm font-semibold text-text-secondary">
+                {isDragging ? 'Lepas file untuk memilih gambar' : fileName ? fileName : 'Drag & drop gambar di sini'}
+              </p>
+              <p className="mt-1 text-xs text-gray-400">PNG, JPG, WebP, GIF hingga 10MB</p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <label className="cursor-pointer rounded-lg bg-poros-red px-4 py-2 text-sm font-bold text-white hover:bg-red-700 transition-colors">
+                  {selectedFile ? 'Ganti File' : 'Pilih File'}
+                  <input
+                    ref={fileInputRef}
+                    name="file"
+                    type="file"
+                    accept="image/*"
+                    required
+                    className="hidden"
+                    onChange={(e) => chooseFile(e.target.files?.[0])}
+                  />
+                </label>
+                {selectedFile && (
+                  <button
+                    type="button"
+                    onClick={resetFileSelection}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border-light px-4 py-2 text-sm font-semibold text-text-secondary hover:border-poros-red hover:text-poros-red"
+                  >
+                    <RotateCcw size={14} /> Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border-light bg-white p-3">
+              {previewUrl ? (
+                <div className="space-y-3">
+                  <div
+                    className="aspect-[16/10] rounded-md border border-border-light bg-gray-100 bg-contain bg-center bg-no-repeat"
+                    style={{ backgroundImage: `url(${previewUrl})` }}
+                    aria-label="Preview gambar"
+                  />
+                  <div className="space-y-1 text-xs text-text-secondary">
+                    <p className="truncate font-semibold text-gray-800" title={fileName}>{fileName}</p>
+                    <p>{formatBytes(selectedFile?.size)}</p>
+                    <p>{previewDimensions ? `${previewDimensions.width} × ${previewDimensions.height}px` : 'Membaca dimensi...'}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex aspect-[16/10] flex-col items-center justify-center rounded-md border border-dashed border-border-light bg-gray-50 text-center text-gray-400">
+                  <ImageIcon size={28} />
+                  <p className="mt-2 text-xs font-semibold">Preview muncul setelah file dipilih</p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {uploadError && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{uploadError}</span>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -236,10 +366,11 @@ export function MediaGrid({ initialItems }: { initialItems: MediaItem[] }) {
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={isUploading}
+              disabled={isUploading || !selectedFile}
               className="inline-flex items-center gap-2 rounded-lg bg-poros-red px-5 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
             >
-              <Upload size={16} /> {isUploading ? 'Mengupload...' : 'Upload'}
+              {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+              {isUploading ? 'Mengupload...' : 'Upload'}
             </button>
           </div>
         </form>
@@ -258,10 +389,12 @@ export function MediaGrid({ initialItems }: { initialItems: MediaItem[] }) {
               onClick={() => setSelectedItem(item)}
               className="group relative aspect-square overflow-hidden rounded-xl border border-border-light bg-white hover:border-poros-red hover:shadow-md transition-all"
             >
-              <img
+              <Image
                 src={getMediaUrl(item as Record<string, unknown>)}
                 alt={item.alt || item.filename || 'Media'}
-                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                fill
+                sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                className="object-cover transition-transform group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity text-left">

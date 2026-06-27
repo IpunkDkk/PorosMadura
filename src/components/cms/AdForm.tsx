@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Save } from 'lucide-react'
 import { getMediaUrl } from '@/lib/media'
 
@@ -109,9 +110,11 @@ export function AdForm({
           <label className="block text-sm font-semibold mb-1.5">Banner Desktop</label>
           {ad?.imageDesktop && (
             <div className="mb-2 overflow-hidden rounded-lg border border-border-light max-w-xs">
-              <img
+              <Image
                 src={getMediaUrl(ad.imageDesktop as Record<string, unknown>)}
                 alt={ad.title}
+                width={320}
+                height={80}
                 className="h-20 w-full object-cover"
               />
             </div>
@@ -134,9 +137,11 @@ export function AdForm({
           <label className="block text-sm font-semibold mb-1.5">Banner Mobile</label>
           {ad?.imageMobile && (
             <div className="mb-2 overflow-hidden rounded-lg border border-border-light max-w-xs">
-              <img
+              <Image
                 src={getMediaUrl(ad.imageMobile as Record<string, unknown>)}
                 alt={ad.title}
+                width={320}
+                height={80}
                 className="h-20 w-full object-cover"
               />
             </div>

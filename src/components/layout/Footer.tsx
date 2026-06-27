@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { getActiveCategories, getSiteSettings } from '@/lib/custom-cms'
 import { normalizeCategory, normalizeSettings, type PublicCategory } from '@/lib/cms'
 import { getMediaUrl } from '@/lib/media'
@@ -20,12 +21,14 @@ export default async function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-3 mb-4">
-              <img
+              <Image
                 src={settings.logo
                   ? getMediaUrl(settings.logo as Record<string, unknown>)
                   : '/logo.png'
                 }
                 alt={settings.siteName}
+                width={160}
+                height={40}
                 className="h-10 w-auto object-contain"
               />
               <span className="font-heading font-black text-3xl tracking-tight text-poros-navy">

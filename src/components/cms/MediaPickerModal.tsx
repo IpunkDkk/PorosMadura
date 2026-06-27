@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Image as ImageIcon, X, Check } from 'lucide-react'
 import { getMediaUrl } from '@/lib/media'
 
@@ -56,9 +57,11 @@ export function MediaPickerModal({
         >
           {selectedItem ? (
             <div className="relative group">
-              <img
+              <Image
                 src={thumbnailUrl(selectedItem)}
                 alt={selectedItem.alt || ''}
+                width={640}
+                height={360}
                 className="aspect-[16/9] w-full rounded-lg object-cover"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
@@ -154,10 +157,12 @@ export function MediaPickerModal({
                             : 'border-transparent hover:border-poros-red/50'
                         }`}
                       >
-                        <img
+                        <Image
                           src={thumbnailUrl(item)}
                           alt={item.alt || item.filename || ''}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="(min-width: 768px) 20vw, 50vw"
+                          className="object-cover"
                         />
                         {isSelected && (
                           <div className="absolute top-1.5 right-1.5 rounded-full bg-poros-red p-0.5">

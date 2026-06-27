@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { FilePlus2, Pencil } from 'lucide-react'
 import { getMediaUrl } from '@/lib/media'
 import { deleteAdAction, getCmsAdsData } from '@/lib/cms-admin'
@@ -6,8 +7,16 @@ import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CmsAdsPage() {
-  const { ads } = await getCmsAdsData()
+type Props = {
+  searchParams: Promise<{
+    issue?: string
+  }>
+}
+
+export default async function CmsAdsPage({ searchParams }: Props) {
+  const params = await searchParams
+  const issue = params.issue === 'expired-active' ? params.issue : ''
+  const { ads } = await getCmsAdsData({ issue })
 
   return (
     <div className="space-y-6">
@@ -23,6 +32,28 @@ export default async function CmsAdsPage() {
           <FilePlus2 size={16} /> Iklan Baru
         </Link>
       </div>
+
+      <form action="/cms/ads" className="rounded-lg border border-border-light bg-white p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <select
+            name="issue"
+            defaultValue={issue}
+            className="h-10 rounded-md border border-border-light bg-white px-3 text-sm"
+          >
+            <option value="">Semua iklan</option>
+            <option value="expired-active">Aktif tapi kedaluwarsa</option>
+          </select>
+          <button type="submit" className="h-10 rounded-md bg-poros-navy px-4 text-sm font-bold text-white hover:bg-poros-navy/90">
+            Filter
+          </button>
+          <Link href="/cms/ads" className="inline-flex h-10 items-center rounded-md border border-border-light px-4 text-sm font-semibold text-text-secondary hover:border-poros-red hover:text-poros-red">
+            Reset
+          </Link>
+          <p className="text-sm text-text-secondary md:ml-auto">
+            Menampilkan {ads.length} iklan
+          </p>
+        </div>
+      </form>
 
       <section className="overflow-hidden rounded-xl border border-border-light bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -43,9 +74,11 @@ export default async function CmsAdsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {ad.imageDesktop ? (
-                        <img
+                        <Image
                           src={getMediaUrl(ad.imageDesktop as Record<string, unknown>)}
                           alt={ad.title}
+                          width={80}
+                          height={40}
                           className="h-10 w-20 rounded-md object-cover border border-border-light"
                         />
                       ) : (

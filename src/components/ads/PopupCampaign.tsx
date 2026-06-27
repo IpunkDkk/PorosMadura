@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { getMediaUrl } from '@/lib/media'
 
 interface PopupAdData {
@@ -21,7 +22,6 @@ export default function PopupCampaign() {
     if (dismissedAt) {
       const elapsed = Date.now() - Number(dismissedAt)
       if (elapsed < 86400000) { // 24 jam
-        setDismissed(true)
         return
       }
     }
@@ -78,9 +78,11 @@ export default function PopupCampaign() {
           className="block"
         >
           {imageUrl ? (
-            <img
+            <Image
               src={imageUrl}
               alt={ad.title || 'Promo'}
+              width={640}
+              height={360}
               className="w-full h-auto rounded-lg"
             />
           ) : (

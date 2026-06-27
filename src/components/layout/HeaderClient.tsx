@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { Menu, Search, X } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import type { PublicCategory, PublicSettings } from '@/lib/cms'
 import { getMediaUrl } from '@/lib/media'
@@ -12,17 +13,21 @@ interface HeaderClientProps {
   settings: PublicSettings
 }
 
+function hasAdminSessionCookie() {
+  if (typeof document === 'undefined') return false
+  return document.cookie
+    .split('; ')
+    .some((row) => row.startsWith('better-auth.session_token='))
+}
+
 export default function HeaderClient({ categories, settings }: HeaderClientProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const isAdmin = useSyncExternalStore(
+    () => () => {},
+    hasAdminSessionCookie,
+    () => false,
+  )
   const pathname = usePathname()
-
-  useEffect(() => {
-    const hasToken = document.cookie
-      .split('; ')
-      .some((row) => row.startsWith('better-auth.session_token='))
-    setIsAdmin(hasToken)
-  }, [])
 
   const isActiveCategory = (slug: string) =>
     pathname === `/category/${slug}` ||
@@ -43,12 +48,14 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
           <div className="flex items-center justify-between py-4">
             <div className="flex flex-col">
               <Link href="/" className="flex items-center gap-2 group">
-                <img
+                <Image
                   src={settings.logo
                     ? getMediaUrl(settings.logo as Record<string, unknown>)
                     : '/logo-putih.png'
                   }
                   alt={settings.siteName}
+                  width={160}
+                  height={40}
                   className="h-10 w-auto object-contain"
                 />
                 <h1 className="font-heading font-black text-2xl tracking-tight">

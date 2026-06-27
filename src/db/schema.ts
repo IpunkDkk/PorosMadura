@@ -199,7 +199,7 @@ export const posts = pgTable('posts', {
   featuredImageId: integer('featured_image_id').references(() => media.id, { onDelete: 'set null' }),
   categoryId: integer('category_id').references(() => categories.id, { onDelete: 'set null' }),
   authorId: integer('author_id').references(() => authors.id, { onDelete: 'set null' }),
-  status: text('status').default('draft').notNull(), // 'draft' | 'review' | 'published' | 'archived'
+  status: text('status').default('draft').notNull(), // 'draft' | 'review' | 'scheduled' | 'published' | 'archived'
   publishedAt: timestamp('published_at'),
   scheduledAt: timestamp('scheduled_at'),
   seoTitle: text('seo_title'),

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { Calendar, Clock, User } from 'lucide-react'
 import { getPageBySlug, getPostBySlug, getPublishedPosts } from '@/lib/custom-cms'
@@ -7,6 +9,7 @@ import { asRecord, renderRichText, normalizePost } from '@/lib/cms'
 import AdSlot from '@/components/ads/AdSlot'
 import { SocialFollow } from '@/components/sidebar/SocialFollow'
 import { PopularPosts } from '@/components/sidebar/PopularPosts'
+import { ViewTracker } from '@/components/article/ViewTracker'
 
 interface Props {
   params: Promise<{ segments?: string[] }>
@@ -143,12 +146,14 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
 
   return (
     <div className="container mx-auto px-4 lg:px-8 py-8 max-w-6xl">
+      <ViewTracker postId={postData.id as number | string} />
+
       <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
-        <a href="/" className="hover:text-poros-red transition-colors font-medium">Home</a>
+        <Link href="/" className="hover:text-poros-red transition-colors font-medium">Home</Link>
         <span className="text-gray-300">/</span>
         {categoryName && (
           <>
-            <a href={`/category/${categorySlug}`} className="hover:text-poros-red transition-colors font-medium">{categoryName}</a>
+            <Link href={`/category/${categorySlug}`} className="hover:text-poros-red transition-colors font-medium">{categoryName}</Link>
             <span className="text-gray-300">/</span>
           </>
         )}
@@ -186,9 +191,9 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-8 pb-6 border-b border-gray-200">
           {authorSlug ? (
-            <a href={`/author/${authorSlug}`} className="flex items-center gap-1.5 hover:text-poros-red font-medium">
+            <Link href={`/author/${authorSlug}`} className="flex items-center gap-1.5 hover:text-poros-red font-medium">
               <User size={16} /> {authorName}
-            </a>
+            </Link>
           ) : (
             <span className="flex items-center gap-1.5"><User size={16} /> {authorName}</span>
           )}
@@ -204,11 +209,14 @@ async function ArticlePage({ category, slug }: { category: string; slug: string 
         </div>
 
         {!!postData.featuredImage && (
-          <div className="mb-8 rounded-2xl overflow-hidden">
-            <img
+          <div className="relative mb-8 aspect-[16/9] overflow-hidden rounded-2xl">
+            <Image
               src={getImageSizeUrl(postData.featuredImage as Record<string, unknown> | null | undefined, 'hero')}
               alt={String(postData.title || '')}
-              className="w-full h-auto"
+              fill
+              priority
+              sizes="(min-width: 1024px) 768px, 100vw"
+              className="object-cover"
             />
           </div>
         )}

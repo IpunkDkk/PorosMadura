@@ -3,7 +3,8 @@
 import { randomUUID } from 'crypto'
 import { mkdir, unlink, writeFile } from 'fs/promises'
 import path from 'path'
-import { count, desc, eq } from 'drizzle-orm'
+import sharp from 'sharp'
+import { and, count, desc, eq, ilike, isNull, lt, or, type SQL } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db } from '@/db'
@@ -17,6 +18,7 @@ import {
   requireCmsRole,
   syncCmsBetterAuthUser,
 } from '@/lib/cms-auth'
+import { indexPost, removePostFromIndex } from '@/lib/search'
 
 function slugify(value: string) {
   return value
@@ -59,6 +61,14 @@ function returnTo(formData: FormData, fallback: string) {
   return target.startsWith('/cms/') ? target : fallback
 }
 
+const maxMediaUploadBytes = 10 * 1024 * 1024
+const mediaSizes = {
+  thumbnail: { width: 320 },
+  card: { width: 640 },
+  hero: { width: 1280 },
+  og: { width: 1200, height: 630 },
+}
+
 async function getAuthorIdForSession(session: CmsSession) {
   if (session.role !== 'author') return null
   const author = await db.query.authors.findFirst({
@@ -79,16 +89,67 @@ async function assertCanEditPost(session: CmsSession, postId: number) {
   if (!post || post.authorId !== authorId) redirect('/cms/posts')
 }
 
+async function getPostForSearchIndex(postId: number) {
+  const post = await db.query.posts.findFirst({
+    where: eq(posts.id, postId),
+    with: {
+      featuredImage: true,
+      category: true,
+      author: true,
+      postTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+  })
+
+  if (!post) return null
+
+  return {
+    ...post,
+    tags: post.postTags.map((item) => item.tag).filter(Boolean),
+  }
+}
+
+async function syncPostSearchIndex(postId: number) {
+  const post = await getPostForSearchIndex(postId)
+
+  if (
+    post &&
+    post.status === 'published' &&
+    post.publishedAt &&
+    post.publishedAt <= new Date()
+  ) {
+    await indexPost(post as unknown as Record<string, unknown>)
+    return
+  }
+
+  await removePostFromIndex(String(postId))
+}
+
 function normalizePostForm(formData: FormData, session: CmsSession, forcedAuthorId?: number | null) {
   const title = stringValue(formData, 'title')
   const slug = stringValue(formData, 'slug') || slugify(title)
   const categoryId = numberValue(formData, 'categoryId') || null
   const authorId = forcedAuthorId ?? (numberValue(formData, 'authorId') || null)
   const content = stringValue(formData, 'content')
-  const status = session.role === 'author'
+  let status = session.role === 'author'
     ? (stringValue(formData, 'status') === 'review' ? 'review' : 'draft')
     : stringValue(formData, 'status') || 'draft'
-  const publishedAt = dateValue(formData, 'publishedAt') || (status === 'published' ? new Date() : null)
+  const requestedPublishDate = dateValue(formData, 'publishedAt')
+  let publishedAt = requestedPublishDate || (status === 'published' ? new Date() : null)
+  let scheduledAt = status === 'scheduled' ? requestedPublishDate : null
+
+  if (status === 'scheduled' && !requestedPublishDate) {
+    throw new Error('Tanggal publish wajib diisi untuk artikel terjadwal')
+  }
+
+  if (status === 'scheduled' && requestedPublishDate && requestedPublishDate <= new Date()) {
+    status = 'published'
+    publishedAt = requestedPublishDate
+    scheduledAt = null
+  }
 
   if (!title || !slug) throw new Error('Judul dan slug wajib diisi')
 
@@ -102,6 +163,7 @@ function normalizePostForm(formData: FormData, session: CmsSession, forcedAuthor
     authorId,
     status,
     publishedAt,
+    scheduledAt,
     seoTitle: optionalString(formData, 'seoTitle'),
     seoDescription: optionalString(formData, 'seoDescription'),
     canonicalUrl: optionalString(formData, 'canonicalUrl'),
@@ -118,7 +180,8 @@ function normalizePostForm(formData: FormData, session: CmsSession, forcedAuthor
 
 export async function getCmsDashboard() {
   await assertCmsAccess()
-  const [postCount, categoryCount, authorCount, tagCount, mediaCount, adCount, recentPosts] = await Promise.all([
+  const now = new Date()
+  const [postCount, categoryCount, authorCount, tagCount, mediaCount, adCount, recentPosts, reviewCount, scheduledCount, missingImageCount, missingSeoCount, activeAdCount, expiredAdCount, reviewPosts, scheduledPosts, topViewedPosts] = await Promise.all([
     db.select({ value: count() }).from(posts),
     db.select({ value: count() }).from(categories),
     db.select({ value: count() }).from(authors),
@@ -128,6 +191,38 @@ export async function getCmsDashboard() {
     db.query.posts.findMany({
       limit: 6,
       orderBy: desc(posts.updatedAt),
+      with: { category: true, author: true },
+    }),
+    db.select({ value: count() }).from(posts).where(eq(posts.status, 'review')),
+    db.select({ value: count() }).from(posts).where(eq(posts.status, 'scheduled')),
+    db.select({ value: count() }).from(posts).where(isNull(posts.featuredImageId)),
+    db.select({ value: count() }).from(posts).where(
+      or(
+        isNull(posts.seoTitle),
+        eq(posts.seoTitle, ''),
+        isNull(posts.seoDescription),
+        eq(posts.seoDescription, ''),
+      ),
+    ),
+    db.select({ value: count() }).from(ads).where(eq(ads.status, 'active')),
+    db.select({ value: count() }).from(ads).where(
+      and(eq(ads.status, 'active'), lt(ads.endDate, now)),
+    ),
+    db.query.posts.findMany({
+      where: eq(posts.status, 'review'),
+      limit: 5,
+      orderBy: desc(posts.updatedAt),
+      with: { category: true, author: true },
+    }),
+    db.query.posts.findMany({
+      where: eq(posts.status, 'scheduled'),
+      limit: 5,
+      orderBy: desc(posts.publishedAt),
+      with: { category: true, author: true },
+    }),
+    db.query.posts.findMany({
+      limit: 5,
+      orderBy: desc(posts.views),
       with: { category: true, author: true },
     }),
   ])
@@ -140,20 +235,88 @@ export async function getCmsDashboard() {
       tags: tagCount[0]?.value || 0,
       media: mediaCount[0]?.value || 0,
       ads: adCount[0]?.value || 0,
+      reviewPosts: reviewCount[0]?.value || 0,
+      scheduledPosts: scheduledCount[0]?.value || 0,
+      missingImages: missingImageCount[0]?.value || 0,
+      missingSeo: missingSeoCount[0]?.value || 0,
+      activeAds: activeAdCount[0]?.value || 0,
+      expiredActiveAds: expiredAdCount[0]?.value || 0,
     },
     recentPosts,
+    reviewPosts,
+    scheduledPosts,
+    topViewedPosts,
   }
 }
 
-export async function getCmsPostList() {
+export async function getCmsPostList(args: {
+  q?: string
+  status?: string
+  issue?: string
+  categoryId?: number
+  authorId?: number
+  page?: number
+  limit?: number
+} = {}) {
   const session = await requireCmsRole(['admin', 'editor', 'author'])
-  const authorId = await getAuthorIdForSession(session)
-  return db.query.posts.findMany({
-    where: authorId ? eq(posts.authorId, authorId) : undefined,
-    limit: 100,
-    orderBy: desc(posts.updatedAt),
-    with: { category: true, author: true },
-  })
+  const sessionAuthorId = await getAuthorIdForSession(session)
+  const page = Math.max(1, args.page || 1)
+  const limit = Math.min(100, Math.max(10, args.limit || 20))
+  const offset = (page - 1) * limit
+  const conditions: SQL[] = []
+
+  if (sessionAuthorId) {
+    conditions.push(eq(posts.authorId, sessionAuthorId))
+  } else if (args.authorId) {
+    conditions.push(eq(posts.authorId, args.authorId))
+  }
+
+  if (args.status) conditions.push(eq(posts.status, args.status))
+  if (args.categoryId) conditions.push(eq(posts.categoryId, args.categoryId))
+  if (args.issue === 'missing-image') {
+    conditions.push(isNull(posts.featuredImageId))
+  }
+  if (args.issue === 'missing-seo') {
+    conditions.push(
+      or(
+        isNull(posts.seoTitle),
+        eq(posts.seoTitle, ''),
+        isNull(posts.seoDescription),
+        eq(posts.seoDescription, ''),
+      )!,
+    )
+  }
+  if (args.q) {
+    const term = `%${args.q}%`
+    conditions.push(or(ilike(posts.title, term), ilike(posts.slug, term), ilike(posts.excerpt, term))!)
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+  const [rows, totalRows, categoryRows, authorRows] = await Promise.all([
+    db.query.posts.findMany({
+      where,
+      limit,
+      offset,
+      orderBy: desc(posts.updatedAt),
+      with: { category: true, author: true },
+    }),
+    db.select({ value: count() }).from(posts).where(where),
+    db.query.categories.findMany({ orderBy: categories.order }),
+    sessionAuthorId
+      ? db.query.authors.findMany({ where: eq(authors.id, sessionAuthorId), orderBy: authors.name })
+      : db.query.authors.findMany({ orderBy: authors.name }),
+  ])
+
+  const totalDocs = totalRows[0]?.value || 0
+  return {
+    docs: rows,
+    totalDocs,
+    totalPages: Math.max(1, Math.ceil(totalDocs / limit)),
+    page,
+    limit,
+    categories: categoryRows,
+    authors: authorRows,
+  }
 }
 
 export async function getCmsPostFormData(idOrSlug?: number | string) {
@@ -214,6 +377,7 @@ export async function createPostAction(formData: FormData) {
   const data = normalizePostForm(formData, session, forcedAuthorId)
   const [post] = await db.insert(posts).values(data).returning({ id: posts.id, slug: posts.slug })
   await syncPostTags(post.id, formData)
+  await syncPostSearchIndex(post.id)
   revalidatePath('/')
   revalidatePath('/cms/posts')
   redirect(`/cms/posts/${post.slug}`)
@@ -226,6 +390,7 @@ export async function updatePostAction(id: number, formData: FormData) {
   const data = normalizePostForm(formData, session, forcedAuthorId)
   const [post] = await db.update(posts).set(data).where(eq(posts.id, id)).returning({ slug: posts.slug })
   await syncPostTags(id, formData)
+  await syncPostSearchIndex(id)
   revalidatePath('/')
   revalidatePath('/cms/posts')
   redirect(`/cms/posts/${post.slug}`)
@@ -235,6 +400,7 @@ export async function deletePostAction(id: number) {
   const session = await requireCmsRole(['admin', 'editor'])
   await assertCanEditPost(session, id)
   await db.delete(posts).where(eq(posts.id, id))
+  await removePostFromIndex(String(id))
   revalidatePath('/')
   revalidatePath('/cms/posts')
   redirect('/cms/posts')
@@ -360,15 +526,62 @@ export async function uploadMediaAction(formData: FormData) {
   if (!(file instanceof File) || file.size === 0) {
     throw new Error('File media wajib diisi')
   }
+  if (!file.type.startsWith('image/')) {
+    throw new Error('File media harus berupa gambar')
+  }
+  if (file.size > maxMediaUploadBytes) {
+    throw new Error('Ukuran file media maksimal 10MB')
+  }
 
   const buffer = Buffer.from(await file.arrayBuffer())
+  const image = sharp(buffer, { failOn: 'none' }).rotate()
+  const metadata = await image.metadata()
+  if (!metadata.width || !metadata.height) {
+    throw new Error('File gambar tidak valid')
+  }
+
   const originalName = file.name || 'media'
   const ext = path.extname(originalName).toLowerCase().replace(/[^a-z0-9.]/g, '')
-  const filename = `${Date.now()}-${randomUUID()}${ext}`
+  const safeExt = ext || '.jpg'
+  const filename = `${Date.now()}-${randomUUID()}${safeExt}`
+  const basename = path.basename(filename, safeExt)
   const mediaDir = path.join(process.cwd(), 'public', 'media')
 
   await mkdir(mediaDir, { recursive: true })
   await writeFile(path.join(mediaDir, filename), buffer)
+
+  const thumbnailFilename = `${basename}-thumbnail.webp`
+  const cardFilename = `${basename}-card.webp`
+  const heroFilename = `${basename}-hero.webp`
+  const ogFilename = `${basename}-og.webp`
+
+  const [thumbnailInfo, cardInfo, heroInfo, ogInfo] = await Promise.all([
+    image
+      .clone()
+      .resize({ width: mediaSizes.thumbnail.width, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toFile(path.join(mediaDir, thumbnailFilename)),
+    image
+      .clone()
+      .resize({ width: mediaSizes.card.width, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toFile(path.join(mediaDir, cardFilename)),
+    image
+      .clone()
+      .resize({ width: mediaSizes.hero.width, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toFile(path.join(mediaDir, heroFilename)),
+    image
+      .clone()
+      .resize({
+        width: mediaSizes.og.width,
+        height: mediaSizes.og.height,
+        fit: 'cover',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 82 })
+      .toFile(path.join(mediaDir, ogFilename)),
+  ])
 
   await db.insert(media).values({
     alt: stringValue(formData, 'alt') || originalName,
@@ -378,7 +591,34 @@ export async function uploadMediaAction(formData: FormData) {
     filename,
     mimeType: file.type || 'application/octet-stream',
     filesize: file.size,
+    width: metadata.width,
+    height: metadata.height,
     url: `/media/${filename}`,
+    thumbnailURL: `/media/${thumbnailFilename}`,
+    sizesThumbnailUrl: `/media/${thumbnailFilename}`,
+    sizesThumbnailWidth: thumbnailInfo.width,
+    sizesThumbnailHeight: thumbnailInfo.height,
+    sizesThumbnailMimeType: 'image/webp',
+    sizesThumbnailFilesize: thumbnailInfo.size,
+    sizesThumbnailFilename: thumbnailFilename,
+    sizesCardUrl: `/media/${cardFilename}`,
+    sizesCardWidth: cardInfo.width,
+    sizesCardHeight: cardInfo.height,
+    sizesCardMimeType: 'image/webp',
+    sizesCardFilesize: cardInfo.size,
+    sizesCardFilename: cardFilename,
+    sizesHeroUrl: `/media/${heroFilename}`,
+    sizesHeroWidth: heroInfo.width,
+    sizesHeroHeight: heroInfo.height,
+    sizesHeroMimeType: 'image/webp',
+    sizesHeroFilesize: heroInfo.size,
+    sizesHeroFilename: heroFilename,
+    sizesOgUrl: `/media/${ogFilename}`,
+    sizesOgWidth: ogInfo.width,
+    sizesOgHeight: ogInfo.height,
+    sizesOgMimeType: 'image/webp',
+    sizesOgFilesize: ogInfo.size,
+    sizesOgFilename: ogFilename,
     updatedAt: new Date(),
   })
 
@@ -392,23 +632,39 @@ export async function deleteMediaAction(id: number) {
     where: eq(media.id, id),
   })
 
-  if (item?.filename) {
+  const filenames = [
+    item?.filename,
+    item?.sizesThumbnailFilename,
+    item?.sizesCardFilename,
+    item?.sizesHeroFilename,
+    item?.sizesOgFilename,
+  ].filter((filename): filename is string => Boolean(filename))
+
+  await Promise.all(filenames.map(async (filename) => {
     try {
-      await unlink(path.join(process.cwd(), 'public', 'media', item.filename))
+      await unlink(path.join(process.cwd(), 'public', 'media', filename))
     } catch {
       /* File may already be missing; keep database cleanup working. */
     }
-  }
+  }))
 
   await db.delete(media).where(eq(media.id, id))
   revalidatePath('/cms/media')
   redirect('/cms/media')
 }
 
-export async function getCmsAdsData() {
+export async function getCmsAdsData(args: {
+  issue?: string
+} = {}) {
   await requireCmsRole(['admin', 'editor'])
+  const now = new Date()
+  const where = args.issue === 'expired-active'
+    ? and(eq(ads.status, 'active'), lt(ads.endDate, now))
+    : undefined
+
   const [adRows, slotRows, mediaRows] = await Promise.all([
     db.query.ads.findMany({
+      where,
       limit: 100,
       orderBy: desc(ads.updatedAt),
       with: {

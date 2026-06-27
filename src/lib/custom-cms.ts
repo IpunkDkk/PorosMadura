@@ -9,6 +9,7 @@ import {
   settings,
   tags,
 } from '@/db/schema'
+import { indexPost } from '@/lib/search'
 
 type CmsResult<T> = {
   docs: T[]
@@ -93,6 +94,50 @@ function normalizePostRow(row: any) {
   }
 }
 
+async function publishDueScheduledPosts() {
+  const now = new Date()
+  const duePosts = await db.query.posts.findMany({
+    where: and(
+      eq(posts.status, 'scheduled'),
+      lte(posts.publishedAt, now),
+    ),
+    limit: 20,
+    with: {
+      featuredImage: true,
+      category: true,
+      author: true,
+      postTags: {
+        with: {
+          tag: true,
+        },
+      },
+    },
+  })
+
+  if (!duePosts.length) return
+
+  const dueIds = duePosts.map((post) => post.id)
+  await db
+    .update(posts)
+    .set({
+      status: 'published',
+      scheduledAt: null,
+      updatedAt: now,
+    })
+    .where(inArray(posts.id, dueIds))
+
+  await Promise.all(duePosts.map((post) => {
+    const normalized = {
+      ...post,
+      status: 'published',
+      scheduledAt: null,
+      updatedAt: now,
+      tags: post.postTags.map((item) => item.tag).filter(Boolean),
+    }
+    return indexPost(normalized as unknown as Record<string, unknown>)
+  }))
+}
+
 function postSort(sort?: string) {
   if (sort === 'views') return asc(posts.views)
   if (sort === '-views') return desc(posts.views)
@@ -102,7 +147,7 @@ function postSort(sort?: string) {
 
 function buildPostConditions(where: CmsWhere = {}) {
   const conditions: SQL[] = [
-    sql`${posts.status}::text = 'published'`,
+    eq(posts.status, 'published'),
     lte(posts.publishedAt, new Date()),
   ]
 
@@ -159,6 +204,8 @@ export async function getPublishedPosts(args: {
   const where = buildPostConditions(args.where)
 
   try {
+    await publishDueScheduledPosts()
+
     const [rows, totalRows] = await Promise.all([
       db.query.posts.findMany({
         where,
@@ -195,10 +242,12 @@ export async function getPublishedPosts(args: {
 
 export async function getPostBySlug(categorySlug: string, postSlug: string) {
   try {
+    await publishDueScheduledPosts()
+
     const post = await db.query.posts.findFirst({
       where: and(
         eq(posts.slug, postSlug),
-        sql`${posts.status}::text = 'published'`,
+        eq(posts.status, 'published'),
         lte(posts.publishedAt, new Date()),
       ),
       with: {

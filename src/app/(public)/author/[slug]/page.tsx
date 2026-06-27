@@ -1,6 +1,7 @@
 import { getAuthorBySlug, getPublishedPosts } from '@/lib/custom-cms'
 import { getImageSizeUrl } from '@/lib/media'
 import { ArticleCard } from '@/components/article/ArticleCard'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { Facebook, Twitter, Instagram } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -47,9 +48,11 @@ export default async function AuthorPage({ params, searchParams }: Props) {
     <div className="container mx-auto px-4 lg:px-8 py-8">
       <div className="flex flex-col md:flex-row gap-6 items-start mb-10 p-6 bg-white rounded-2xl border border-gray-200">
         {authorAvatar && (
-          <img
+          <Image
             src={getImageSizeUrl(authorAvatar, 'thumbnail')}
             alt={authorName}
+            width={96}
+            height={96}
             className="w-24 h-24 rounded-full object-cover shrink-0"
           />
         )}

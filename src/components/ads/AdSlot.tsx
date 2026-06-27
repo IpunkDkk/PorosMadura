@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { getMediaUrl } from '@/lib/media'
 
 interface AdResult {
@@ -42,16 +43,22 @@ const PLACEMENT_DIMENSIONS: Record<string, { w?: number; h: number }> = {
 }
 
 export default function AdSlot({ placement, className = '' }: AdSlotProps) {
-  const [ad, setAd] = useState<AdResult | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [adState, setAdState] = useState<{
+    placement: string
+    ad: AdResult | null
+    loading: boolean
+    error: boolean
+  }>({
+    placement,
+    ad: null,
+    loading: true,
+    error: false,
+  })
   const impressionSent = useRef(false)
   const imgRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
-    setError(false)
 
     fetch(`/api/ads-data?placement=${encodeURIComponent(placement)}`, {
       signal: controller.signal,
@@ -61,18 +68,30 @@ export default function AdSlot({ placement, className = '' }: AdSlotProps) {
         return res.json()
       })
       .then((data: AdResult) => {
-        setAd(data)
-        setLoading(false)
+        setAdState({
+          placement,
+          ad: data,
+          loading: false,
+          error: false,
+        })
       })
       .catch((err) => {
         if (err.name !== 'AbortError') {
-          setError(true)
-          setLoading(false)
+          setAdState({
+            placement,
+            ad: null,
+            loading: false,
+            error: true,
+          })
         }
       })
 
     return () => controller.abort()
   }, [placement])
+
+  const loading = adState.placement !== placement || adState.loading
+  const error = adState.placement === placement && adState.error
+  const ad = adState.placement === placement ? adState.ad : null
 
   useEffect(() => {
     if (ad?.type !== 'manual' || impressionSent.current) return
@@ -125,6 +144,13 @@ export default function AdSlot({ placement, className = '' }: AdSlotProps) {
     )
   }
 
+  const desktopImageUrl = ad.imageDesktop
+    ? getMediaUrl(ad.imageDesktop as Record<string, unknown>)
+    : ''
+  const mobileImageUrl = getMediaUrl(
+    (ad.imageMobile || ad.imageDesktop) as Record<string, unknown>,
+  )
+
   return (
     <div ref={imgRef} className={`ad-manual ${className}`}>
       <a
@@ -133,22 +159,35 @@ export default function AdSlot({ placement, className = '' }: AdSlotProps) {
         rel="noopener noreferrer"
         className="block"
       >
-        <picture>
-          {ad.imageDesktop && (
-            <source
-              media="(min-width: 768px)"
-              srcSet={getMediaUrl(ad.imageDesktop as Record<string, unknown>)}
+        {ad.imageMobile && ad.imageDesktop ? (
+          <>
+            <Image
+              src={desktopImageUrl}
+              alt={ad.title || 'Iklan'}
+              width={970}
+              height={250}
+              sizes="(min-width: 768px) 100vw, 0vw"
+              className="hidden h-auto w-full md:block"
             />
-          )}
-          <img
-            src={getMediaUrl(
-              (ad.imageMobile || ad.imageDesktop) as Record<string, unknown>,
-            )}
+            <Image
+              src={mobileImageUrl}
+              alt={ad.title || 'Iklan'}
+              width={640}
+              height={320}
+              sizes="(min-width: 768px) 0vw, 100vw"
+              className="h-auto w-full md:hidden"
+            />
+          </>
+        ) : (
+          <Image
+            src={mobileImageUrl}
             alt={ad.title || 'Iklan'}
-            className="w-full h-auto"
-            loading="lazy"
+            width={970}
+            height={250}
+            sizes="100vw"
+            className="h-auto w-full"
           />
-        </picture>
+        )}
       </a>
     </div>
   )

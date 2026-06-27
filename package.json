@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "seed": "tsx src/db/seed-custom.ts",
     "seed:custom": "tsx src/db/seed-custom.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
@@ -15,7 +15,8 @@
     "db:push": "drizzle-kit push --config=drizzle.config.ts",
     "migrate": "tsx src/db/migrate-custom.ts",
     "migrate:push": "drizzle-kit push --config=drizzle.config.ts",
-    "migrate:create": "drizzle-kit generate --config=drizzle.config.ts"
+    "migrate:create": "drizzle-kit generate --config=drizzle.config.ts",
+    "search:reindex": "tsx src/db/reindex-search.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.22",
@@ -46,6 +47,8 @@
     "@types/react-dom": "^19.0.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.9",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.22.4",

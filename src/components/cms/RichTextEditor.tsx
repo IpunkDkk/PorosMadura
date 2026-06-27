@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
+import NextImage from 'next/image'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
@@ -419,10 +420,12 @@ export function RichTextEditor({ name, initialContent = '', mediaItems = [] }: R
                         onClick={() => handleImageSelect(url, item.alt || '')}
                         className="group relative aspect-square overflow-hidden rounded-xl border border-border-light bg-white hover:border-poros-red transition-all p-1"
                       >
-                        <img
+                        <NextImage
                           src={thumb}
                           alt={item.alt || item.filename || ''}
-                          className="h-full w-full object-cover rounded-lg"
+                          fill
+                          sizes="(min-width: 768px) 20vw, 50vw"
+                          className="rounded-lg object-cover"
                         />
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 text-left rounded-b-lg">
                           <p className="truncate text-[10px] text-white font-medium">{item.alt || item.filename}</p>
@@ -582,6 +585,7 @@ export function RichTextEditor({ name, initialContent = '', mediaItems = [] }: R
             </div>
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-center bg-gray-50 rounded-lg p-2 max-h-[140px] overflow-hidden border border-border-light">
+                {/* eslint-disable-next-line @next/next/no-img-element -- editor accepts arbitrary external preview URLs that are not in next.config remotePatterns */}
                 <img src={selectedImageUrl} alt="Preview" className="max-h-[120px] object-contain rounded" />
               </div>
 

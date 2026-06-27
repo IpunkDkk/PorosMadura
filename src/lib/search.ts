@@ -7,6 +7,11 @@ const searchEnabled = process.env.MEILISEARCH_ENABLED !== 'false' && Boolean(hos
 export const searchClient = new Meilisearch({ host, apiKey })
 
 const POSTS_INDEX = 'posts'
+const postsIndexSettings = {
+  filterableAttributes: ['categorySlug', 'tags', 'authorSlug', 'isFeatured', 'isBreakingNews'],
+  sortableAttributes: ['publishedAt', 'updatedAt'],
+  searchableAttributes: ['title', 'excerpt', 'category', 'tags', 'author'],
+}
 let warnedUnavailable = false
 
 function warnSearchUnavailable(action: string, err: unknown) {
@@ -19,32 +24,90 @@ function warnSearchUnavailable(action: string, err: unknown) {
   )
 }
 
+async function waitForTask(task: { taskUid?: number; uid?: number } | undefined) {
+  const taskUid = task?.taskUid ?? task?.uid
+  if (typeof taskUid !== 'number') return
+  await searchClient.tasks.waitForTask(taskUid)
+}
+
+function mapPostToSearchDocument(post: Record<string, unknown>) {
+  const category = typeof post.category === 'object' && post.category
+    ? post.category as Record<string, unknown>
+    : null
+  const author = typeof post.author === 'object' && post.author
+    ? post.author as Record<string, unknown>
+    : null
+  const featuredImage = typeof post.featuredImage === 'object' && post.featuredImage
+    ? post.featuredImage as Record<string, unknown>
+    : null
+
+  return {
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt,
+    category: category?.name || post.category || '',
+    categorySlug: category?.slug || '',
+    tags: Array.isArray(post.tags) ? post.tags.map((t: Record<string, string>) => t.name).filter(Boolean) : [],
+    author: author?.name || '',
+    authorSlug: author?.slug || '',
+    publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt,
+    featuredImage: featuredImage?.url as string || null,
+    url: `/${category?.slug || ''}/${post.slug}`,
+    isFeatured: post.isFeatured,
+    isBreakingNews: post.isBreakingNews,
+  }
+}
+
+export async function ensurePostsIndex() {
+  if (!searchEnabled) return false
+
+  try {
+    const index = searchClient.index(POSTS_INDEX)
+    await waitForTask(await index.updateSettings(postsIndexSettings))
+    return true
+  } catch (err) {
+    warnSearchUnavailable('post index setup', err)
+    return false
+  }
+}
+
 export async function indexPost(post: Record<string, unknown>) {
   if (!searchEnabled) return
 
   try {
+    await ensurePostsIndex()
     const index = searchClient.index(POSTS_INDEX)
-    await index.addDocuments([{
-      id: post.id,
-      title: post.title,
-      slug: post.slug,
-      excerpt: post.excerpt,
-      category: typeof post.category === 'object' ? (post.category as Record<string, unknown>)?.name : post.category,
-      categorySlug: typeof post.category === 'object' ? (post.category as Record<string, unknown>)?.slug : '',
-      tags: Array.isArray(post.tags) ? post.tags.map((t: Record<string, string>) => t.name).filter(Boolean) : [],
-      author: typeof post.author === 'object' ? (post.author as Record<string, unknown>)?.name : '',
-      authorSlug: typeof post.author === 'object' ? (post.author as Record<string, unknown>)?.slug : '',
-      publishedAt: post.publishedAt,
-      updatedAt: post.updatedAt,
-      featuredImage: typeof post.featuredImage === 'object'
-        ? (post.featuredImage as Record<string, unknown>)?.url as string
-        : null,
-      url: `/${typeof post.category === 'object' ? (post.category as Record<string, unknown>)?.slug : ''}/${post.slug}`,
-      isFeatured: post.isFeatured,
-      isBreakingNews: post.isBreakingNews,
-    }])
+    await waitForTask(await index.addDocuments([mapPostToSearchDocument(post)]))
   } catch (err) {
     warnSearchUnavailable('post indexing', err)
+  }
+}
+
+export async function indexPosts(posts: Record<string, unknown>[]) {
+  if (!searchEnabled || posts.length === 0) return
+
+  try {
+    await ensurePostsIndex()
+    const index = searchClient.index(POSTS_INDEX)
+    await waitForTask(await index.addDocuments(posts.map(mapPostToSearchDocument)))
+  } catch (err) {
+    warnSearchUnavailable('bulk post indexing', err)
+  }
+}
+
+export async function clearPostsIndex() {
+  if (!searchEnabled) return false
+
+  try {
+    await ensurePostsIndex()
+    const index = searchClient.index(POSTS_INDEX)
+    await waitForTask(await index.deleteAllDocuments())
+    return true
+  } catch (err) {
+    warnSearchUnavailable('post index clearing', err)
+    return false
   }
 }
 
@@ -53,7 +116,7 @@ export async function removePostFromIndex(postId: string) {
 
   try {
     const index = searchClient.index(POSTS_INDEX)
-    await index.deleteDocument(postId)
+    await waitForTask(await index.deleteDocument(postId))
   } catch (err) {
     warnSearchUnavailable('post removal from index', err)
   }

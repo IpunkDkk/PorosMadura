@@ -1,5 +1,6 @@
 import { User, Clock } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getImageSizeUrl } from '@/lib/media'
 
 export function formatRelativeTime(dateString: string): string {
@@ -52,10 +53,13 @@ export function HeroNews({ featured }: HeroNewsProps) {
           className="lg:col-span-2 relative group cursor-pointer overflow-hidden rounded-2xl bg-black"
         >
           <div className="aspect-[4/3] lg:aspect-[16/9] relative">
-            <img
+            <Image
               src={getImageSizeUrl(main.featuredImage as Record<string, unknown> | null | undefined, 'hero')}
               alt={main.title}
-              className="object-cover w-full h-full opacity-80 group-hover:scale-105 transition-transform duration-700 group-hover:opacity-100"
+              fill
+              priority
+              sizes="(min-width: 1024px) 66vw, 100vw"
+              className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-700 group-hover:opacity-100"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
           </div>
@@ -93,10 +97,12 @@ export function HeroNews({ featured }: HeroNewsProps) {
                 className="relative group cursor-pointer overflow-hidden rounded-2xl bg-black h-full sm:aspect-[4/3] lg:aspect-auto"
               >
                 <div className="absolute inset-0 h-full w-full">
-                  <img
+                  <Image
                     src={getImageSizeUrl(news.featuredImage as Record<string, unknown> | null | undefined, 'card')}
                     alt={news.title}
-                    className="object-cover w-full h-full opacity-80 group-hover:scale-105 transition-transform duration-700 group-hover:opacity-100"
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-700 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                 </div>

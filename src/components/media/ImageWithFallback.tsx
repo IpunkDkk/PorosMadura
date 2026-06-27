@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { getImageSizeUrl } from '@/lib/media'
 
 interface ImageWithFallbackProps {
@@ -15,9 +16,11 @@ export function ImageWithFallback({ src, alt, size = 'card', className = '' }: I
   const imgSrc = error ? '/og-image.jpg' : getImageSizeUrl(src as Record<string, unknown> | null | undefined, size)
 
   return (
-    <img
+    <Image
       src={imgSrc}
       alt={alt}
+      width={640}
+      height={360}
       className={className}
       loading="lazy"
       onError={() => setError(true)}
