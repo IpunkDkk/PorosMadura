@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import NextImage from 'next/image'
 import { EditorContent, useEditor } from '@tiptap/react'
@@ -176,6 +176,22 @@ export function RichTextEditor({ name, initialContent = '', mediaItems = [] }: R
       setHtml(editor.getHTML())
     },
   })
+
+  useEffect(() => {
+    if (!editor) return
+    const currentEditor = editor
+
+    function handleSetContent(event: Event) {
+      const detail = (event as CustomEvent<{ name?: string; html?: string }>).detail
+      if (detail?.name !== name || typeof detail.html !== 'string') return
+
+      currentEditor.commands.setContent(detail.html)
+      setHtml(detail.html)
+    }
+
+    window.addEventListener('cms:set-rich-text-content', handleSetContent)
+    return () => window.removeEventListener('cms:set-rich-text-content', handleSetContent)
+  }, [editor, name])
 
   // Open Link Modal with prefilled current selection URL (if exists)
   const openLinkModal = useCallback(() => {

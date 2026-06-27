@@ -4,6 +4,8 @@ import { createPostAction, deletePostAction, updatePostAction } from '@/lib/cms-
 import { RichTextEditor } from '@/components/cms/RichTextEditor'
 import { MediaPickerModal } from '@/components/cms/MediaPickerModal'
 import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
+import { AiPostAssistant } from '@/components/cms/AiPostAssistant'
+import { PostAutosave } from '@/components/cms/PostAutosave'
 
 type Option = {
   id: number
@@ -68,7 +70,10 @@ export function PostForm({
   return (
     <>
     <form action={action} className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
+      <input type="hidden" name="autosavePostId" defaultValue={post?.id ? String(post.id) : ''} />
       <div className="space-y-5">
+        <AiPostAssistant categories={categories} tags={tags} />
+
         <div className="bg-white border border-border-light rounded-lg p-5 space-y-4">
           <div>
             <label className="block text-sm font-semibold mb-2" htmlFor="title">Judul</label>
@@ -143,9 +148,12 @@ export function PostForm({
 
         <div className="flex items-center justify-between gap-3">
           <Link href="/cms/posts" className="text-sm font-semibold text-text-secondary hover:text-poros-red">Kembali</Link>
-          <button type="submit" className="inline-flex items-center gap-2 rounded-md bg-poros-red px-4 py-2 text-sm font-bold text-white hover:bg-red-700">
-            <Save size={16} /> Simpan
-          </button>
+          <div className="flex items-center gap-3">
+            <PostAutosave postId={post?.id || null} />
+            <button type="submit" className="inline-flex items-center gap-2 rounded-md bg-poros-red px-4 py-2 text-sm font-bold text-white hover:bg-red-700">
+              <Save size={16} /> Simpan
+            </button>
+          </div>
         </div>
       </div>
 

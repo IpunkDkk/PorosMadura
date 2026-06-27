@@ -3,7 +3,7 @@ import Redis from 'ioredis'
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
 let redis: Redis | null = null
 
-function getRedis(): Redis | null {
+export function getRedisClient(): Redis | null {
   if (redis) return redis
   if (!process.env.REDIS_URL) return null
   try {
@@ -21,25 +21,25 @@ function getRedis(): Redis | null {
 }
 
 export async function getCached(key: string): Promise<string | null> {
-  const client = getRedis()
+  const client = getRedisClient()
   if (!client) return null
   try { return await client.get(key) } catch { return null }
 }
 
 export async function setCache(key: string, value: string, ttlSeconds = 300): Promise<void> {
-  const client = getRedis()
+  const client = getRedisClient()
   if (!client) return
   try { await client.setex(key, ttlSeconds, value) } catch { /* silent */ }
 }
 
 export async function invalidateCache(key: string): Promise<void> {
-  const client = getRedis()
+  const client = getRedisClient()
   if (!client) return
   try { await client.del(key) } catch { /* silent */ }
 }
 
 export async function invalidateCachePattern(pattern: string): Promise<void> {
-  const client = getRedis()
+  const client = getRedisClient()
   if (!client) return
   try {
     const keys = await client.keys(pattern)

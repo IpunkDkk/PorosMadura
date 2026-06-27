@@ -8,7 +8,7 @@ import { and, count, desc, eq, ilike, isNull, lt, or, type SQL } from 'drizzle-o
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db } from '@/db'
-import { adSlots, ads, authors, categories, media, pages, posts, postTags, settings, tags, users } from '@/db/schema'
+import { adSlots, ads, authors, categories, media, pages, postRevisions, posts, postTags, settings, tags, users } from '@/db/schema'
 import {
   type CmsSession,
   assertCmsAccess,
@@ -126,6 +126,47 @@ async function syncPostSearchIndex(postId: number) {
   }
 
   await removePostFromIndex(String(postId))
+}
+
+async function uniquePostSlug(baseSlug: string, currentPostId?: number) {
+  const base = slugify(baseSlug) || `draft-${Date.now()}`
+  let candidate = base
+  let suffix = 2
+
+  while (true) {
+    const existing = await db.query.posts.findFirst({
+      where: eq(posts.slug, candidate),
+    })
+    if (!existing || existing.id === currentPostId) return candidate
+    candidate = `${base}-${suffix}`
+    suffix += 1
+  }
+}
+
+function serializePostSnapshot(data: ReturnType<typeof normalizePostForm>, tagIds: number[] = []) {
+  return {
+    ...data,
+    tagIds,
+    publishedAt: data.publishedAt?.toISOString?.() || data.publishedAt || null,
+    scheduledAt: data.scheduledAt?.toISOString?.() || data.scheduledAt || null,
+    updatedAt: data.updatedAt?.toISOString?.() || data.updatedAt || null,
+  }
+}
+
+async function createPostRevision(input: {
+  postId: number
+  userId: number
+  type: 'manual' | 'autosave' | 'restore'
+  title?: string | null
+  snapshot: unknown
+}) {
+  await db.insert(postRevisions).values({
+    postId: input.postId,
+    userId: input.userId,
+    type: input.type,
+    title: input.title || null,
+    snapshot: input.snapshot,
+  })
 }
 
 function normalizePostForm(formData: FormData, session: CmsSession, forcedAuthorId?: number | null) {
@@ -375,8 +416,39 @@ export async function createPostAction(formData: FormData) {
   const session = await requireCmsRole(['admin', 'editor', 'author'])
   const forcedAuthorId = await getAuthorIdForSession(session)
   const data = normalizePostForm(formData, session, forcedAuthorId)
+  const autosavePostId = numberValue(formData, 'autosavePostId')
+
+  if (autosavePostId) {
+    await assertCanEditPost(session, autosavePostId)
+    data.slug = await uniquePostSlug(data.slug, autosavePostId)
+    const [post] = await db.update(posts)
+      .set(data)
+      .where(eq(posts.id, autosavePostId))
+      .returning({ id: posts.id, slug: posts.slug })
+    const tagIds = await syncPostTags(post.id, formData)
+    await createPostRevision({
+      postId: post.id,
+      userId: session.id,
+      type: 'manual',
+      title: data.title,
+      snapshot: serializePostSnapshot(data, tagIds),
+    })
+    await syncPostSearchIndex(post.id)
+    revalidatePath('/')
+    revalidatePath('/cms/posts')
+    redirect(`/cms/posts/${post.slug}`)
+  }
+
+  data.slug = await uniquePostSlug(data.slug)
   const [post] = await db.insert(posts).values(data).returning({ id: posts.id, slug: posts.slug })
-  await syncPostTags(post.id, formData)
+  const tagIds = await syncPostTags(post.id, formData)
+  await createPostRevision({
+    postId: post.id,
+    userId: session.id,
+    type: 'manual',
+    title: data.title,
+    snapshot: serializePostSnapshot(data, tagIds),
+  })
   await syncPostSearchIndex(post.id)
   revalidatePath('/')
   revalidatePath('/cms/posts')
@@ -388,8 +460,16 @@ export async function updatePostAction(id: number, formData: FormData) {
   await assertCanEditPost(session, id)
   const forcedAuthorId = await getAuthorIdForSession(session)
   const data = normalizePostForm(formData, session, forcedAuthorId)
+  data.slug = await uniquePostSlug(data.slug, id)
   const [post] = await db.update(posts).set(data).where(eq(posts.id, id)).returning({ slug: posts.slug })
-  await syncPostTags(id, formData)
+  const tagIds = await syncPostTags(id, formData)
+  await createPostRevision({
+    postId: id,
+    userId: session.id,
+    type: 'manual',
+    title: data.title,
+    snapshot: serializePostSnapshot(data, tagIds),
+  })
   await syncPostSearchIndex(id)
   revalidatePath('/')
   revalidatePath('/cms/posts')
@@ -406,6 +486,76 @@ export async function deletePostAction(id: number) {
   redirect('/cms/posts')
 }
 
+export async function restorePostRevisionAction(postId: number, revisionId: number) {
+  const session = await requireCmsRole(['admin', 'editor', 'author'])
+  await assertCanEditPost(session, postId)
+
+  const revision = await db.query.postRevisions.findFirst({
+    where: and(eq(postRevisions.id, revisionId), eq(postRevisions.postId, postId)),
+  })
+  if (!revision) throw new Error('Revisi tidak ditemukan')
+
+  const snapshot = revision.snapshot as Record<string, unknown>
+  const data = {
+    title: String(snapshot.title || ''),
+    slug: String(snapshot.slug || ''),
+    excerpt: typeof snapshot.excerpt === 'string' ? snapshot.excerpt : null,
+    content: typeof snapshot.content === 'string' ? snapshot.content : '',
+    featuredImageId: Number(snapshot.featuredImageId) || null,
+    categoryId: Number(snapshot.categoryId) || null,
+    authorId: Number(snapshot.authorId) || null,
+    status: String(snapshot.status || 'draft'),
+    publishedAt: typeof snapshot.publishedAt === 'string' && snapshot.publishedAt ? new Date(snapshot.publishedAt) : null,
+    scheduledAt: typeof snapshot.scheduledAt === 'string' && snapshot.scheduledAt ? new Date(snapshot.scheduledAt) : null,
+    seoTitle: typeof snapshot.seoTitle === 'string' ? snapshot.seoTitle : null,
+    seoDescription: typeof snapshot.seoDescription === 'string' ? snapshot.seoDescription : null,
+    canonicalUrl: typeof snapshot.canonicalUrl === 'string' ? snapshot.canonicalUrl : null,
+    ogImageId: Number(snapshot.ogImageId) || null,
+    isFeatured: Boolean(snapshot.isFeatured),
+    isBreakingNews: Boolean(snapshot.isBreakingNews),
+    allowIndex: snapshot.allowIndex !== false,
+    sourceName: typeof snapshot.sourceName === 'string' ? snapshot.sourceName : null,
+    sourceUrl: typeof snapshot.sourceUrl === 'string' ? snapshot.sourceUrl : null,
+    readingTime: Number(snapshot.readingTime) || 0,
+    updatedAt: new Date(),
+  }
+
+  if (!data.title || !data.slug) throw new Error('Snapshot revisi tidak valid')
+
+  const [post] = await db.update(posts).set(data).where(eq(posts.id, postId)).returning({ slug: posts.slug })
+  const tagIds = Array.isArray(snapshot.tagIds)
+    ? snapshot.tagIds.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+    : []
+
+  const formData = new FormData()
+  for (const tagId of tagIds) formData.append('tagIds', String(tagId))
+  await syncPostTags(postId, formData)
+
+  await createPostRevision({
+    postId,
+    userId: session.id,
+    type: 'restore',
+    title: data.title,
+    snapshot: { ...snapshot, restoredFromRevisionId: revisionId, restoredAt: new Date().toISOString() },
+  })
+
+  await syncPostSearchIndex(postId)
+  revalidatePath('/')
+  revalidatePath('/cms/posts')
+  redirect(`/cms/posts/${post.slug}`)
+}
+
+export async function getPostRevisions(postId: number) {
+  const session = await requireCmsRole(['admin', 'editor', 'author'])
+  await assertCanEditPost(session, postId)
+
+  return db.query.postRevisions.findMany({
+    where: eq(postRevisions.postId, postId),
+    orderBy: desc(postRevisions.createdAt),
+    limit: 30,
+  })
+}
+
 async function syncPostTags(postId: number, formData: FormData) {
   const tagIds = formData.getAll('tagIds')
     .map((value) => Number(value))
@@ -420,6 +570,8 @@ async function syncPostTags(postId: number, formData: FormData) {
       order: index,
     })
   }
+
+  return tagIds
 }
 
 export async function getCmsTaxonomyData() {

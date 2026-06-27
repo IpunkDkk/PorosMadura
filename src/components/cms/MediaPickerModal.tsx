@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Image as ImageIcon, X, Check } from 'lucide-react'
 import { getMediaUrl } from '@/lib/media'
@@ -33,14 +33,41 @@ export function MediaPickerModal({
 }: MediaPickerProps) {
   const [open, setOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string>(defaultValue ? String(defaultValue) : '')
+  const [injectedItems, setInjectedItems] = useState<MediaItem[]>([])
 
-  const selectedItem = mediaItems.find((m) => String(m.id) === selectedId)
+  const allMediaItems = useMemo(() => {
+    const existingIds = new Set(mediaItems.map((item) => String(item.id)))
+    return [
+      ...injectedItems.filter((item) => !existingIds.has(String(item.id))),
+      ...mediaItems,
+    ]
+  }, [injectedItems, mediaItems])
+
+  const selectedItem = allMediaItems.find((m) => String(m.id) === selectedId)
 
   const thumbnailUrl = (item: MediaItem) =>
     item.sizesThumbnailUrl ||
     item.sizesCardUrl ||
     item.url ||
     getMediaUrl(item as Record<string, unknown>)
+
+  useEffect(() => {
+    function handleSetMedia(event: Event) {
+      const detail = (event as CustomEvent<{ name?: string; id?: number | string; media?: MediaItem }>).detail
+      if (detail?.name !== name || !detail.id) return
+
+      if (detail.media) {
+        setInjectedItems((items) => {
+          const withoutExisting = items.filter((item) => String(item.id) !== String(detail.media?.id))
+          return [detail.media as MediaItem, ...withoutExisting]
+        })
+      }
+      setSelectedId(String(detail.id))
+    }
+
+    window.addEventListener('cms:set-media-field', handleSetMedia)
+    return () => window.removeEventListener('cms:set-media-field', handleSetMedia)
+  }, [name])
 
   return (
     <>
@@ -133,7 +160,7 @@ export function MediaPickerModal({
                 </button>
               </div>
 
-              {!mediaItems.length ? (
+              {!allMediaItems.length ? (
                 <div className="flex flex-col items-center gap-3 py-12 text-center text-text-secondary">
                   <ImageIcon size={36} className="text-gray-300" />
                   <p className="font-semibold">Belum ada media</p>
@@ -141,7 +168,7 @@ export function MediaPickerModal({
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {mediaItems.map((item) => {
+                  {allMediaItems.map((item) => {
                     const isSelected = String(item.id) === selectedId
                     return (
                       <button

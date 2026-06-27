@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { PostForm } from '@/components/cms/PostForm'
-import { getCmsPostFormData } from '@/lib/cms-admin'
+import { PostRevisionHistory } from '@/components/cms/PostRevisionHistory'
+import { getCmsPostFormData, getPostRevisions } from '@/lib/cms-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,7 @@ export default async function CmsEditPostPage({
 
   const data = await getCmsPostFormData(slug)
   if (!data.post) notFound()
+  const revisions = await getPostRevisions(data.post.id)
 
   return (
     <div className="space-y-6">
@@ -29,6 +31,7 @@ export default async function CmsEditPostPage({
         mediaItems={data.media}
         selectedTagIds={data.selectedTagIds}
       />
+      <PostRevisionHistory postId={data.post.id} revisions={revisions} />
     </div>
   )
 }

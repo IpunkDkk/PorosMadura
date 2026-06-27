@@ -225,6 +225,16 @@ export const postTags = pgTable('posts_rels', {
   tagId: integer('tags_id').references(() => tags.id, { onDelete: 'cascade' }),
 })
 
+export const postRevisions = pgTable('post_revisions', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  type: text('type').default('manual').notNull(), // 'manual' | 'autosave' | 'restore'
+  title: text('title'),
+  snapshot: jsonb('snapshot').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 export const pages = pgTable('pages', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
