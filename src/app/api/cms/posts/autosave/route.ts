@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { authors, postRevisions, posts, postTags } from '@/db/schema'
 import { getCmsSession } from '@/lib/cms-auth'
+import { formatPortalDateTime } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const title = stringValue(body, 'title') || `Draft otomatis ${new Date().toLocaleString('id-ID')}`
+  const title = stringValue(body, 'title') || `Draft otomatis ${formatPortalDateTime(new Date())}`
   const slug = await uniqueSlug(stringValue(body, 'slug') || title, postId || undefined)
   const forcedAuthorId = await getAuthorIdForSession(session.id, session.role)
   const requestedStatus = stringValue(body, 'status') || 'draft'

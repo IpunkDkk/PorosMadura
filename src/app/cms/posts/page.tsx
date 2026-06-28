@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { FilePlus2, Pencil, Search } from 'lucide-react'
 import { getCmsPostList } from '@/lib/cms-admin'
+import { formatPortalDateTime } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -200,7 +201,7 @@ export default async function CmsPostsPage({ searchParams }: Props) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  {post.publishedAt ? new Date(post.publishedAt).toLocaleString('id-ID') : '-'}
+                  {formatPortalDateTime(post.publishedAt) || '-'}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/cms/posts/${post.slug}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">

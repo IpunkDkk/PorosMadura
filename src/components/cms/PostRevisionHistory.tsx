@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { History, RotateCcw, X } from 'lucide-react'
 import { restorePostRevisionAction } from '@/lib/cms-admin'
+import { formatPortalDateTime } from '@/lib/date'
 
 type Revision = {
   id: number
@@ -14,15 +15,6 @@ type Revision = {
 type PostRevisionHistoryProps = {
   postId: number
   revisions: Revision[]
-}
-
-function formatDate(value: Date | string) {
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleString('id-ID', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
 }
 
 function revisionLabel(type: string) {
@@ -84,7 +76,7 @@ export function PostRevisionHistory({ postId, revisions }: PostRevisionHistoryPr
                           {revision.title || 'Tanpa judul'}
                         </p>
                       </div>
-                      <p className="mt-1 text-xs text-text-secondary">{formatDate(revision.createdAt)}</p>
+                      <p className="mt-1 text-xs text-text-secondary">{formatPortalDateTime(revision.createdAt) || '-'}</p>
                     </div>
                     <form action={restorePostRevisionAction.bind(null, postId, revision.id)}>
                       <button

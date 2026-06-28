@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Loader2, Save, XCircle } from 'lucide-react'
+import { formatPortalTime } from '@/lib/date'
 
 type PostAutosaveProps = {
   postId?: number | null
@@ -99,7 +100,7 @@ export function PostAutosave({ postId }: PostAutosaveProps) {
 
         lastPayloadRef.current = JSON.stringify(collectPayload(form, postId))
         setState('saved')
-        setMessage(`Tersimpan otomatis ${new Date(result.savedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`)
+        setMessage(`Tersimpan otomatis ${formatPortalTime(result.savedAt)}`)
       } catch (error) {
         setState('error')
         setMessage(error instanceof Error ? error.message : 'Autosave gagal')

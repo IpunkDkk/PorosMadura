@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Save } from 'lucide-react'
 import { saveUserAction } from '@/lib/cms-admin'
+import { formatPortalDateTime } from '@/lib/date'
 import { CmsTaxonomyModal } from '@/components/cms/CmsTaxonomyModal'
 
 type User = {
@@ -168,7 +169,7 @@ export function CmsUsersClient({ users }: { users: User[] }) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-text-secondary">
-                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('id-ID') : '-'}
+                    {formatPortalDateTime(user.lastLoginAt) || '-'}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button

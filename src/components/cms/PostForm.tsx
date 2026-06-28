@@ -9,7 +9,7 @@ import { PostAutosave } from '@/components/cms/PostAutosave'
 import { PostPreviewButton } from '@/components/cms/PostPreviewButton'
 import { PostFocusButton } from '@/components/cms/PostFocusButton'
 import { TagCheckboxList } from '@/components/cms/TagCheckboxList'
-import { formatDatetimeLocalValue } from '@/lib/date'
+import { formatDatetimeLocalValue, formatPortalDateTime } from '@/lib/date'
 
 type Option = {
   id: number
@@ -239,7 +239,7 @@ export function PostForm({
               <p>{post.sourceReviewReason}</p>
               {post.sourceCheckedAt && (
                 <p className="mt-1 text-xs">
-                  Dicek {new Date(post.sourceCheckedAt).toLocaleString('id-ID')}
+                  Dicek {formatPortalDateTime(post.sourceCheckedAt)}
                   {post.sourceStatusCode ? `, HTTP ${post.sourceStatusCode}` : ''}
                 </p>
               )}

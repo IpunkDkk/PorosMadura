@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { FilePlus2, Pencil } from 'lucide-react'
 import { getCmsPageList } from '@/lib/cms-admin'
+import { formatPortalDateTime } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +48,7 @@ export default async function CmsPagesPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-text-secondary">
-                  {page.updatedAt ? new Date(page.updatedAt).toLocaleString('id-ID') : '-'}
+                  {formatPortalDateTime(page.updatedAt) || '-'}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/cms/pages/${page.slug}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">

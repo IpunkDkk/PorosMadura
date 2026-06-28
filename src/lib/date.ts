@@ -32,6 +32,28 @@ export function formatPortalShortDate(value: unknown): string {
   return formatPortalDate(value, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+export function formatPortalDateTime(value: unknown): string {
+  const date = parseDateValue(value)
+  if (!date) return ''
+
+  return date.toLocaleString('id-ID', {
+    timeZone: PORTAL_TIME_ZONE,
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
+
+export function formatPortalTime(value: unknown): string {
+  const date = parseDateValue(value)
+  if (!date) return ''
+
+  return date.toLocaleTimeString('id-ID', {
+    timeZone: PORTAL_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function formatRelativeTime(value: unknown): string {
   const date = parseDateValue(value)
   if (!date) return ''
