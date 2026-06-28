@@ -1,7 +1,7 @@
 'use server'
 
 import { randomUUID } from 'crypto'
-import { mkdir, unlink, writeFile } from 'fs/promises'
+import { mkdir, rename, stat, unlink, writeFile } from 'fs/promises'
 import path from 'path'
 import sharp from 'sharp'
 import { and, count, desc, eq, ilike, inArray, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
@@ -831,6 +831,122 @@ export async function uploadMediaAction(formData: FormData) {
   redirect('/cms/media')
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+async function deleteMediaFiles(filenames: Array<string | null | undefined>) {
+  await Promise.all(filenames.filter((filename): filename is string => Boolean(filename)).map(async (filename) => {
+    try {
+      await unlink(path.join(process.cwd(), 'public', 'media', filename))
+    } catch {
+      /* File may already be missing; keep database updates working. */
+    }
+  }))
+}
+
+export async function cropMediaAction(id: number, formData: FormData) {
+  await requireCmsRole(['admin', 'editor'])
+  const item = await db.query.media.findFirst({
+    where: eq(media.id, id),
+  })
+  if (!item?.filename) throw new Error('Media tidak ditemukan')
+
+  const mediaDir = path.join(process.cwd(), 'public', 'media')
+  const originalPath = path.join(mediaDir, item.filename)
+  const image = sharp(originalPath, { failOn: 'none' }).rotate()
+  const metadata = await image.metadata()
+  if (!metadata.width || !metadata.height) throw new Error('Gambar original tidak valid')
+
+  const cropX = numberValue(formData, 'cropX')
+  const cropY = numberValue(formData, 'cropY')
+  const cropWidth = numberValue(formData, 'cropWidth')
+  const cropHeight = numberValue(formData, 'cropHeight')
+
+  if (cropWidth < 20 || cropHeight < 20) {
+    throw new Error('Area crop terlalu kecil')
+  }
+
+  const left = Math.round(clamp(cropX, 0, metadata.width - 1))
+  const top = Math.round(clamp(cropY, 0, metadata.height - 1))
+  const width = Math.round(clamp(cropWidth, 20, metadata.width - left))
+  const height = Math.round(clamp(cropHeight, 20, metadata.height - top))
+
+  const originalExt = path.extname(item.filename)
+  const originalBase = path.basename(item.filename, originalExt)
+  const basename = `${originalBase}-crop-${Date.now()}`
+  const tempOriginalFilename = `${basename}${originalExt || '.jpg'}`
+  const tempOriginalPath = path.join(mediaDir, tempOriginalFilename)
+  const thumbnailFilename = `${basename}-thumbnail.webp`
+  const cardFilename = `${basename}-card.webp`
+  const heroFilename = `${basename}-hero.webp`
+  const ogFilename = `${basename}-og.webp`
+  const cropped = image.clone().extract({ left, top, width, height })
+
+  await cropped.clone().toFile(tempOriginalPath)
+
+  const [thumbnailInfo, cardInfo, heroInfo, ogInfo] = await Promise.all([
+    sharp(tempOriginalPath).resize({ width: mediaSizes.thumbnail.width, withoutEnlargement: true }).webp({ quality: 82 }).toFile(path.join(mediaDir, thumbnailFilename)),
+    sharp(tempOriginalPath).resize({ width: mediaSizes.card.width, withoutEnlargement: true }).webp({ quality: 82 }).toFile(path.join(mediaDir, cardFilename)),
+    sharp(tempOriginalPath).resize({ width: mediaSizes.hero.width, withoutEnlargement: true }).webp({ quality: 82 }).toFile(path.join(mediaDir, heroFilename)),
+    sharp(tempOriginalPath).resize({ width: mediaSizes.og.width, height: mediaSizes.og.height, fit: 'cover', withoutEnlargement: true }).webp({ quality: 82 }).toFile(path.join(mediaDir, ogFilename)),
+  ])
+  const originalInfo = await sharp(tempOriginalPath).metadata()
+  const originalFileInfo = await stat(tempOriginalPath)
+  const now = Date.now()
+
+  await rename(tempOriginalPath, originalPath)
+
+  await db.update(media)
+    .set({
+      focalX: (left + width / 2) / metadata.width,
+      focalY: (top + height / 2) / metadata.height,
+      filesize: originalFileInfo.size,
+      width: originalInfo.width || width,
+      height: originalInfo.height || height,
+      url: `/media/${item.filename}`,
+      thumbnailURL: `/media/${thumbnailFilename}`,
+      sizesThumbnailUrl: `/media/${thumbnailFilename}`,
+      sizesThumbnailWidth: thumbnailInfo.width,
+      sizesThumbnailHeight: thumbnailInfo.height,
+      sizesThumbnailMimeType: 'image/webp',
+      sizesThumbnailFilesize: thumbnailInfo.size,
+      sizesThumbnailFilename: thumbnailFilename,
+      sizesCardUrl: `/media/${cardFilename}`,
+      sizesCardWidth: cardInfo.width,
+      sizesCardHeight: cardInfo.height,
+      sizesCardMimeType: 'image/webp',
+      sizesCardFilesize: cardInfo.size,
+      sizesCardFilename: cardFilename,
+      sizesHeroUrl: `/media/${heroFilename}`,
+      sizesHeroWidth: heroInfo.width,
+      sizesHeroHeight: heroInfo.height,
+      sizesHeroMimeType: 'image/webp',
+      sizesHeroFilesize: heroInfo.size,
+      sizesHeroFilename: heroFilename,
+      sizesOgUrl: `/media/${ogFilename}`,
+      sizesOgWidth: ogInfo.width,
+      sizesOgHeight: ogInfo.height,
+      sizesOgMimeType: 'image/webp',
+      sizesOgFilesize: ogInfo.size,
+      sizesOgFilename: ogFilename,
+      updatedAt: new Date(now),
+    })
+    .where(eq(media.id, id))
+
+  await deleteMediaFiles([
+    item.sizesThumbnailFilename,
+    item.sizesCardFilename,
+    item.sizesHeroFilename,
+    item.sizesOgFilename,
+  ])
+
+  revalidatePath('/cms/media')
+  revalidatePath('/cms/posts')
+  revalidatePath('/')
+  return { ok: true }
+}
+
 export async function deleteMediaAction(id: number) {
   await requireCmsRole(['admin', 'editor'])
   const item = await db.query.media.findFirst({
@@ -845,13 +961,7 @@ export async function deleteMediaAction(id: number) {
     item?.sizesOgFilename,
   ].filter((filename): filename is string => Boolean(filename))
 
-  await Promise.all(filenames.map(async (filename) => {
-    try {
-      await unlink(path.join(process.cwd(), 'public', 'media', filename))
-    } catch {
-      /* File may already be missing; keep database cleanup working. */
-    }
-  }))
+  await deleteMediaFiles(filenames)
 
   await db.delete(media).where(eq(media.id, id))
   revalidatePath('/cms/media')

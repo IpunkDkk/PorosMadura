@@ -2,8 +2,8 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
-import { Upload, X, Copy, Check, Image as ImageIcon, AlertCircle, Loader2, RotateCcw } from 'lucide-react'
-import { deleteMediaAction, uploadMediaAction } from '@/lib/cms-admin'
+import { Upload, X, Copy, Check, Image as ImageIcon, AlertCircle, Loader2, RotateCcw, Crop } from 'lucide-react'
+import { cropMediaAction, deleteMediaAction, uploadMediaAction } from '@/lib/cms-admin'
 import { getMediaUrl } from '@/lib/media'
 import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
 
@@ -20,6 +20,10 @@ type MediaItem = {
   width?: number | null
   height?: number | null
   url?: string | null
+  sizesThumbnailUrl?: string | null
+  sizesCardUrl?: string | null
+  sizesHeroUrl?: string | null
+  sizesOgUrl?: string | null
 }
 
 function formatBytes(bytes: number | null | undefined) {
@@ -39,9 +43,258 @@ function isNextRedirectError(error: unknown) {
   )
 }
 
+function mediaPreviewUrl(item: MediaItem) {
+  return item.sizesCardUrl || item.sizesThumbnailUrl || item.sizesHeroUrl || getMediaUrl(item as Record<string, unknown>).split('?')[0]
+}
+
+function MediaCropForm({ item }: { item: MediaItem }) {
+  const width = item.width || 0
+  const height = item.height || 0
+  const cropFrameRef = useRef<HTMLDivElement>(null)
+  const dragStateRef = useRef<{
+    pointerId: number
+    mode: 'move' | 'resize'
+    startClientX: number
+    startClientY: number
+    startCrop: { x: number; y: number; width: number; height: number }
+    imageRect: { left: number; top: number; width: number; height: number }
+  } | null>(null)
+  const [crop, setCrop] = useState(() => {
+    const initialWidth = Math.round(width * 0.82)
+    const initialHeight = Math.round(height * 0.82)
+    return {
+      x: Math.round((width - initialWidth) / 2),
+      y: Math.round((height - initialHeight) / 2),
+      width: initialWidth,
+      height: initialHeight,
+    }
+  })
+  const [isSavingCrop, setIsSavingCrop] = useState(false)
+  const [cropError, setCropError] = useState('')
+  const originalUrl = getMediaUrl(item as Record<string, unknown>)
+
+  if (!width || !height) {
+    return (
+      <div className="rounded-md border border-border-light bg-gray-50 px-3 py-2 text-xs font-semibold text-text-secondary">
+        Dimensi original tidak tersedia untuk crop.
+      </div>
+    )
+  }
+
+  const minCropSize = 40
+  const cropX = Math.round(crop.x)
+  const cropY = Math.round(crop.y)
+  const cropWidth = Math.round(crop.width)
+  const cropHeight = Math.round(crop.height)
+  const imageRatio = width / height
+  const editorRatio = 16 / 10
+  const imageArea = editorRatio > imageRatio
+    ? {
+        width: (imageRatio / editorRatio) * 100,
+        height: 100,
+        left: (100 - (imageRatio / editorRatio) * 100) / 2,
+        top: 0,
+      }
+    : {
+        width: 100,
+        height: (editorRatio / imageRatio) * 100,
+        left: 0,
+        top: (100 - (editorRatio / imageRatio) * 100) / 2,
+      }
+  const overlayStyle = {
+    left: `${imageArea.left + (cropX / width) * imageArea.width}%`,
+    top: `${imageArea.top + (cropY / height) * imageArea.height}%`,
+    width: `${(cropWidth / width) * imageArea.width}%`,
+    height: `${(cropHeight / height) * imageArea.height}%`,
+  }
+  const cropSummary = `${cropWidth} × ${cropHeight}px`
+
+  function normalizeCrop(next: { x: number; y: number; width: number; height: number }) {
+    const nextWidth = Math.min(width, Math.max(minCropSize, next.width))
+    const nextHeight = Math.min(height, Math.max(minCropSize, next.height))
+    return {
+      width: nextWidth,
+      height: nextHeight,
+      x: Math.min(width - nextWidth, Math.max(0, next.x)),
+      y: Math.min(height - nextHeight, Math.max(0, next.y)),
+    }
+  }
+
+  function getContainedImageRect(container: HTMLDivElement) {
+    const rect = container.getBoundingClientRect()
+    const imageRatio = width / height
+    const boxRatio = rect.width / rect.height
+
+    if (boxRatio > imageRatio) {
+      const renderedWidth = rect.height * imageRatio
+      return {
+        left: rect.left + (rect.width - renderedWidth) / 2,
+        top: rect.top,
+        width: renderedWidth,
+        height: rect.height,
+      }
+    }
+
+    const renderedHeight = rect.width / imageRatio
+    return {
+      left: rect.left,
+      top: rect.top + (rect.height - renderedHeight) / 2,
+      width: rect.width,
+      height: renderedHeight,
+    }
+  }
+
+  function handleCropPointerDown(event: React.PointerEvent<HTMLDivElement>, mode: 'move' | 'resize') {
+    event.preventDefault()
+    event.stopPropagation()
+    const frame = cropFrameRef.current
+    if (!frame) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      mode,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startCrop: crop,
+      imageRect: getContainedImageRect(frame),
+    }
+  }
+
+  function handleCropPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragStateRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    event.preventDefault()
+    const deltaX = ((event.clientX - drag.startClientX) / drag.imageRect.width) * width
+    const deltaY = ((event.clientY - drag.startClientY) / drag.imageRect.height) * height
+    if (drag.mode === 'resize') {
+      setCrop(normalizeCrop({
+        ...drag.startCrop,
+        width: drag.startCrop.width + deltaX,
+        height: drag.startCrop.height + deltaY,
+      }))
+      return
+    }
+
+    setCrop(normalizeCrop({
+      ...drag.startCrop,
+      x: drag.startCrop.x + deltaX,
+      y: drag.startCrop.y + deltaY,
+    }))
+  }
+
+  function handleCropPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragStateRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    dragStateRef.current = null
+    event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+
+  return (
+    <form
+      action={async (formData: FormData) => {
+        setCropError('')
+        setIsSavingCrop(true)
+        try {
+          await cropMediaAction(item.id, formData)
+          window.location.reload()
+        } catch (error) {
+          setCropError(error instanceof Error ? error.message : 'Crop gagal. Coba ulangi.')
+          setIsSavingCrop(false)
+        }
+      }}
+      className="space-y-4"
+    >
+      <input type="hidden" name="cropX" value={cropX} />
+      <input type="hidden" name="cropY" value={cropY} />
+      <input type="hidden" name="cropWidth" value={cropWidth} />
+      <input type="hidden" name="cropHeight" value={cropHeight} />
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-bold uppercase text-text-secondary">Editor Original</p>
+          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700">
+            Hasil {cropSummary}
+          </span>
+        </div>
+        <div
+          ref={cropFrameRef}
+          className="relative aspect-[16/10] overflow-hidden rounded-lg border border-border-light bg-gray-950"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- Crop editor needs natural image ratio and overlay alignment. */}
+          <img src={originalUrl} alt={item.alt || ''} className="h-full w-full object-contain" draggable={false} />
+        <div className="absolute inset-0 bg-black/40" />
+        <div
+          role="button"
+          aria-label="Area crop"
+          tabIndex={0}
+          onPointerDown={(event) => handleCropPointerDown(event, 'move')}
+          onPointerMove={handleCropPointerMove}
+          onPointerUp={handleCropPointerUp}
+          onPointerCancel={handleCropPointerUp}
+          className="absolute cursor-move touch-none border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] after:absolute after:inset-1 after:border after:border-white/70"
+          style={overlayStyle}
+        >
+          <div
+            role="button"
+            aria-label="Ubah ukuran crop"
+            tabIndex={0}
+            onPointerDown={(event) => handleCropPointerDown(event, 'resize')}
+            onPointerMove={handleCropPointerMove}
+            onPointerUp={handleCropPointerUp}
+            onPointerCancel={handleCropPointerUp}
+            className="absolute -bottom-2 -right-2 h-5 w-5 cursor-nwse-resize touch-none rounded-full border-2 border-white bg-poros-red shadow-md"
+          />
+        </div>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="rounded-full bg-black/55 px-3 py-1 text-xs font-bold text-white opacity-80">
+              Seret kotak atau tarik pojok
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-xs text-text-secondary sm:grid-cols-4">
+        <div className="rounded-md border border-border-light bg-gray-50 p-2">
+          <p className="font-bold text-gray-800">X</p>
+          <p>{cropX}px</p>
+        </div>
+        <div className="rounded-md border border-border-light bg-gray-50 p-2">
+          <p className="font-bold text-gray-800">Y</p>
+          <p>{cropY}px</p>
+        </div>
+        <div className="rounded-md border border-border-light bg-gray-50 p-2">
+          <p className="font-bold text-gray-800">Lebar</p>
+          <p>{cropWidth}px</p>
+        </div>
+        <div className="rounded-md border border-border-light bg-gray-50 p-2">
+          <p className="font-bold text-gray-800">Tinggi</p>
+          <p>{cropHeight}px</p>
+        </div>
+      </div>
+
+      {cropError && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <span>{cropError}</span>
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={isSavingCrop}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-poros-red px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-60"
+      >
+        {isSavingCrop ? <Loader2 size={16} className="animate-spin" /> : <Crop size={16} />}
+        {isSavingCrop ? 'Menyimpan crop...' : 'Simpan sebagai original baru'}
+      </button>
+    </form>
+  )
+}
+
 function MediaDetailModal({ item, onClose }: { item: MediaItem; onClose: () => void }) {
   const [copied, setCopied] = useState(false)
   const url = getMediaUrl(item as Record<string, unknown>)
+  const previewUrl = mediaPreviewUrl(item)
 
   const copyUrl = () => {
     navigator.clipboard.writeText(url)
@@ -51,26 +304,50 @@ function MediaDetailModal({ item, onClose }: { item: MediaItem; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8" onClick={onClose}>
-      <div className="relative w-full max-w-2xl rounded-xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="relative w-full max-w-6xl rounded-xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border-light px-5 py-4">
-          <h2 className="font-heading text-lg font-bold text-poros-navy truncate pr-4">{item.alt || item.filename || 'Media'}</h2>
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase text-poros-red">Edit Media</p>
+            <h2 className="truncate pr-4 font-heading text-lg font-bold text-poros-navy">{item.alt || item.filename || 'Media'}</h2>
+          </div>
           <button type="button" onClick={onClose} className="shrink-0 rounded-md p-1.5 text-text-secondary hover:bg-gray-100">
             <X size={18} />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          <div className="bg-gray-100 flex items-center justify-center min-h-[200px] max-h-[360px] p-2">
-            <Image
-              src={url}
-              alt={item.alt || ''}
-              width={640}
-              height={480}
-              className="max-h-[340px] max-w-full object-contain rounded-lg"
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="max-h-[78vh] overflow-y-auto bg-gray-50 p-5">
+            <MediaCropForm item={item} />
+            <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-text-secondary sm:grid-cols-4">
+              <div className="rounded-md border border-border-light bg-white p-3">
+                <p className="font-bold text-gray-800">Original</p>
+                <p>{item.width && item.height ? `${item.width} × ${item.height}` : '-'}</p>
+              </div>
+              <div className="rounded-md border border-border-light bg-white p-3">
+                <p className="font-bold text-gray-800">Card</p>
+                <p>640px</p>
+              </div>
+              <div className="rounded-md border border-border-light bg-white p-3">
+                <p className="font-bold text-gray-800">Hero</p>
+                <p>1280px</p>
+              </div>
+              <div className="rounded-md border border-border-light bg-white p-3">
+                <p className="font-bold text-gray-800">OG</p>
+                <p>1200 × 630</p>
+              </div>
+            </div>
           </div>
-          <div className="p-5 space-y-4 flex flex-col justify-between">
+          <div className="max-h-[75vh] overflow-y-auto p-5 space-y-5">
             <div className="space-y-4">
+              <div className="overflow-hidden rounded-lg border border-border-light bg-gray-100">
+                <Image
+                  src={previewUrl}
+                  alt={item.alt || ''}
+                  width={640}
+                  height={360}
+                  className="aspect-[16/10] w-full object-contain"
+                />
+              </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">URL</span>
@@ -124,7 +401,12 @@ function MediaDetailModal({ item, onClose }: { item: MediaItem; onClose: () => v
               </div>
             </div>
 
-            <div className="pt-3 border-t border-border-light">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <p className="font-bold">Crop mengubah original media.</p>
+              <p className="mt-1">Media ID tetap sama, lalu thumbnail, card, hero, dan OG dibuat ulang dari original baru.</p>
+            </div>
+
+            <div className="border-t border-border-light pt-4">
               <form action={deleteMediaAction.bind(null, item.id)}>
                 <CmsConfirmSubmit
                   title="Hapus media?"
@@ -390,7 +672,7 @@ export function MediaGrid({ initialItems }: { initialItems: MediaItem[] }) {
               className="group relative aspect-square overflow-hidden rounded-xl border border-border-light bg-white hover:border-poros-red hover:shadow-md transition-all"
             >
               <Image
-                src={getMediaUrl(item as Record<string, unknown>)}
+                src={mediaPreviewUrl(item)}
                 alt={item.alt || item.filename || 'Media'}
                 fill
                 sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
