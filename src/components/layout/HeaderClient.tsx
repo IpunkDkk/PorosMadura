@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import type { PublicCategory, PublicSettings } from '@/lib/cms'
+import { formatPortalLongDate } from '@/lib/date'
 import { getMediaUrl } from '@/lib/media'
 
 interface HeaderClientProps {
@@ -34,12 +35,7 @@ export default function HeaderClient({ categories, settings }: HeaderClientProps
     pathname.startsWith(`/category/${slug}/`) ||
     (pathname.startsWith(`/${slug}/`) && !pathname.startsWith('/category/'))
 
-  const today = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const today = formatPortalLongDate(new Date())
 
   return (
     <>

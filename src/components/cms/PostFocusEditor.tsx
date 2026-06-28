@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Calendar, Clock, Eye, EyeOff, User } from 'lucide-react'
 import { RichTextEditor } from '@/components/cms/RichTextEditor'
+import { formatPortalLongDate } from '@/lib/date'
 import { getMediaUrl } from '@/lib/media'
 
 type MediaItem = {
@@ -47,13 +48,6 @@ function formValue(form: HTMLFormElement, name: string) {
 function selectedTagIds(form: HTMLFormElement) {
   return Array.from(form.querySelectorAll<HTMLInputElement>('input[name="tagIds"]:checked'))
     .map((field) => field.value)
-}
-
-function inputDateLabel(value: string | Date | null | undefined) {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(String(value))
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 function mediaHeroUrl(media: MediaItem | undefined) {
@@ -256,7 +250,7 @@ export function PostFocusEditor({
                       </span>
                       {publishedAt && (
                         <span className="flex items-center gap-1.5">
-                          <Calendar size={14} /> {inputDateLabel(publishedAt)}
+                          <Calendar size={14} /> {formatPortalLongDate(publishedAt)}
                         </span>
                       )}
                       {readingTime ? (

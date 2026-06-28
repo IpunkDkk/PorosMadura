@@ -2,28 +2,7 @@ import { User, Clock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getImageSizeUrl } from '@/lib/media'
-
-export function formatRelativeTime(dateString: string): string {
-  const now = new Date()
-  const date = new Date(dateString)
-  const diffMs = now.getTime() - date.getTime()
-  const diffSeconds = Math.floor(diffMs / 1000)
-  const diffMinutes = Math.floor(diffSeconds / 60)
-  const diffHours = Math.floor(diffMinutes / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMinutes < 1) return 'Baru saja'
-  if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`
-  if (diffHours < 24) return `${diffHours} jam yang lalu`
-  if (diffDays < 7) return `${diffDays} hari yang lalu`
-
-  return date.toLocaleDateString('id-ID', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
+import { formatRelativeTime } from '@/lib/date'
 
 interface HeroPost {
   title: string

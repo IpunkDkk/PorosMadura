@@ -1,6 +1,41 @@
-// src/lib/date.ts
-export function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr)
+export const PORTAL_TIME_ZONE = 'Asia/Jakarta'
+
+function parseDateValue(value: unknown): Date | null {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(String(value))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+export function formatPortalDate(
+  value: unknown,
+  options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' },
+): string {
+  const date = parseDateValue(value)
+  if (!date) return ''
+
+  return date.toLocaleDateString('id-ID', {
+    timeZone: PORTAL_TIME_ZONE,
+    ...options,
+  })
+}
+
+export function formatPortalLongDate(value: unknown): string {
+  return formatPortalDate(value, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+export function formatPortalShortDate(value: unknown): string {
+  return formatPortalDate(value, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+export function formatRelativeTime(value: unknown): string {
+  const date = parseDateValue(value)
+  if (!date) return ''
+
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffSeconds = Math.floor(diffMs / 1000)
@@ -12,18 +47,25 @@ export function formatRelativeTime(dateStr: string): string {
   if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`
   if (diffHours < 24) return `${diffHours} jam yang lalu`
   if (diffDays < 7) return `${diffDays} hari yang lalu`
-  return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })
+  return formatPortalShortDate(date)
 }
 
 export function formatDatetimeLocalValue(value: unknown): string {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(String(value))
-  if (Number.isNaN(date.getTime())) return ''
+  const date = parseDateValue(value)
+  if (!date) return ''
 
-  const pad = (part: number) => String(part).padStart(2, '0')
-  return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-  ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: PORTAL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date)
+
+  const partValue = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value || ''
+
+  return `${partValue('year')}-${partValue('month')}-${partValue('day')}T${partValue('hour')}:${partValue('minute')}`
 }

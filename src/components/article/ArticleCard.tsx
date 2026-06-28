@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { getImageSizeUrl } from '@/lib/media'
-import { formatRelativeTime } from '@/components/article/HeroNews'
+import { formatRelativeTime } from '@/lib/date'
 
 interface ArticleCardProps {
   title: string

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { FilePlus2, Pencil } from 'lucide-react'
+import { formatPortalShortDate } from '@/lib/date'
 import { getMediaUrl } from '@/lib/media'
 import { deleteAdAction, getCmsAdsData } from '@/lib/cms-admin'
 import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
@@ -126,9 +127,9 @@ export default async function CmsAdsPage({ searchParams }: Props) {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-text-secondary">
-                    {ad.startDate ? new Date(ad.startDate).toLocaleDateString('id-ID') : '-'}
+                    {formatPortalShortDate(ad.startDate) || '-'}
                     {' – '}
-                    {ad.endDate ? new Date(ad.endDate).toLocaleDateString('id-ID') : '-'}
+                    {formatPortalShortDate(ad.endDate) || '-'}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">

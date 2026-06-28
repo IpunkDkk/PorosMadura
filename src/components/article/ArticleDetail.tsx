@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Calendar, Clock, User } from 'lucide-react'
 import { getPublishedPosts } from '@/lib/custom-cms'
 import { asRecord, normalizePost, renderRichText } from '@/lib/cms'
+import { formatPortalLongDate } from '@/lib/date'
 import { getImageSizeUrl } from '@/lib/media'
 import AdSlot from '@/components/ads/AdSlot'
 import { ViewTracker } from '@/components/article/ViewTracker'
@@ -108,7 +109,7 @@ export async function ArticleDetail({ post, slug, preview = false }: ArticleDeta
             {publishedAt && (
               <span className="flex items-center gap-1.5">
                 <Calendar size={16} />
-                {new Date(publishedAt).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                {formatPortalLongDate(publishedAt)}
               </span>
             )}
             {readingTime ? (

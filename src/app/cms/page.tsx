@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { AlertCircle, CalendarClock, Eye, FileImage, FilePlus2, SearchCheck } from 'lucide-react'
 import { getCmsDashboard } from '@/lib/cms-admin'
+import { formatPortalShortDate } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 
@@ -168,7 +169,7 @@ export default async function CmsDashboardPage() {
           href="/cms/posts?status=scheduled"
           posts={scheduledPosts}
           empty="Tidak ada artikel terjadwal."
-          meta={(post) => post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('id-ID') : '-'}
+          meta={(post) => formatPortalShortDate(post.publishedAt) || '-'}
         />
         <CompactPostList
           title="Paling banyak dibaca"

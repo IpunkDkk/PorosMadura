@@ -3,9 +3,9 @@ import Image from 'next/image'
 import { Clock, Search as SearchIcon } from 'lucide-react'
 import { getPublishedPosts, searchPublishedPostsFallback } from '@/lib/custom-cms'
 import { normalizePost } from '@/lib/cms'
+import { formatRelativeTime } from '@/lib/date'
 import { getImageSizeUrl } from '@/lib/media'
 import { searchPosts } from '@/lib/search'
-import { formatRelativeTime } from '@/components/article/HeroNews'
 
 type Props = {
   searchParams: Promise<{
