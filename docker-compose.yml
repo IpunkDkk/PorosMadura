@@ -100,6 +100,42 @@ services:
       retries: 3
       start_period: 15s
 
+  source-link-cron:
+    image: porosmadura-app
+    build:
+      context: .
+      target: dev
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 512m
+    pids_limit: 150
+    command: ["npm", "run", "source-links:cron"]
+    env_file:
+      - .env
+    environment:
+      TZ: Asia/Jakarta
+      DATABASE_URI: postgres://porosmadura:porosmadura@postgres:5432/porosmadura
+      REDIS_URL: redis://redis:6379
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: master-key
+      SOURCE_LINK_CHECK_CRON_HOUR: ${SOURCE_LINK_CHECK_CRON_HOUR:-2}
+      SOURCE_LINK_CHECK_CRON_MINUTE: ${SOURCE_LINK_CHECK_CRON_MINUTE:-0}
+      SOURCE_LINK_CHECK_LIMIT: ${SOURCE_LINK_CHECK_LIMIT:-100}
+      SOURCE_LINK_CHECK_MAX_AGE_HOURS: ${SOURCE_LINK_CHECK_MAX_AGE_HOURS:-24}
+      SOURCE_LINK_CHECK_DETECT_CHANGES: ${SOURCE_LINK_CHECK_DETECT_CHANGES:-true}
+      NODE_OPTIONS: --max-old-space-size=384
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+      - app_next:/app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+
 volumes:
   pgdata:
   redisdata:

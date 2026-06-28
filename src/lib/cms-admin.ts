@@ -4,11 +4,11 @@ import { randomUUID } from 'crypto'
 import { mkdir, unlink, writeFile } from 'fs/promises'
 import path from 'path'
 import sharp from 'sharp'
-import { and, count, desc, eq, ilike, isNull, lt, or, type SQL } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db } from '@/db'
-import { adSlots, ads, authors, categories, media, pages, postRevisions, posts, postTags, settings, tags, users } from '@/db/schema'
+import { adSlots, ads, authors, categories, media, pages, postRevisions, postSourceChecks, posts, postTags, settings, tags, users } from '@/db/schema'
 import {
   type CmsSession,
   assertCmsAccess,
@@ -169,6 +169,34 @@ async function createPostRevision(input: {
   })
 }
 
+async function getLatestSourceChecks(postIds: number[]) {
+  if (postIds.length === 0) return new Map<number, typeof postSourceChecks.$inferSelect>()
+
+  const rows = await db.query.postSourceChecks.findMany({
+    where: inArray(postSourceChecks.postId, postIds),
+    orderBy: desc(postSourceChecks.checkedAt),
+  })
+  const latest = new Map<number, typeof postSourceChecks.$inferSelect>()
+
+  for (const row of rows) {
+    if (!latest.has(row.postId)) latest.set(row.postId, row)
+  }
+
+  return latest
+}
+
+function withSourceCheck<T extends { id: number }>(
+  post: T,
+  check?: typeof postSourceChecks.$inferSelect,
+) {
+  return {
+    ...post,
+    sourceCheckedAt: check?.checkedAt || null,
+    sourceStatusCode: check?.statusCode || null,
+    sourceReviewReason: check?.reviewReason || null,
+  }
+}
+
 function normalizePostForm(formData: FormData, session: CmsSession, forcedAuthorId?: number | null) {
   const title = stringValue(formData, 'title')
   const slug = stringValue(formData, 'slug') || slugify(title)
@@ -327,6 +355,19 @@ export async function getCmsPostList(args: {
       )!,
     )
   }
+  if (args.issue === 'source-review') {
+    conditions.push(sql`EXISTS (
+      SELECT 1
+      FROM "post_source_checks" psc
+      WHERE psc."post_id" = "posts"."id"
+        AND psc."review_reason" IS NOT NULL
+        AND psc."checked_at" = (
+          SELECT MAX(latest."checked_at")
+          FROM "post_source_checks" latest
+          WHERE latest."post_id" = "posts"."id"
+        )
+    )`)
+  }
   if (args.q) {
     const term = `%${args.q}%`
     conditions.push(or(ilike(posts.title, term), ilike(posts.slug, term), ilike(posts.excerpt, term))!)
@@ -349,8 +390,9 @@ export async function getCmsPostList(args: {
   ])
 
   const totalDocs = totalRows[0]?.value || 0
+  const latestSourceChecks = await getLatestSourceChecks(rows.map((row) => row.id))
   return {
-    docs: rows,
+    docs: rows.map((row) => withSourceCheck(row, latestSourceChecks.get(row.id))),
     totalDocs,
     totalPages: Math.max(1, Math.ceil(totalDocs / limit)),
     page,
@@ -401,9 +443,10 @@ export async function getCmsPostFormData(idOrSlug?: number | string) {
     db.query.tags.findMany({ orderBy: tags.name }),
     db.query.media.findMany({ orderBy: desc(media.updatedAt), limit: 100 }),
   ])
+  const latestSourceChecks = await getLatestSourceChecks(post ? [post.id] : [])
 
   return {
-    post,
+    post: post ? withSourceCheck(post, latestSourceChecks.get(post.id)) : null,
     categories: categoryRows,
     authors: authorRows,
     tags: tagRows,
@@ -459,9 +502,19 @@ export async function updatePostAction(id: number, formData: FormData) {
   const session = await requireCmsRole(['admin', 'editor', 'author'])
   await assertCanEditPost(session, id)
   const forcedAuthorId = await getAuthorIdForSession(session)
+  const existing = await db.query.posts.findFirst({
+    where: eq(posts.id, id),
+    columns: {
+      sourceUrl: true,
+    },
+  })
   const data = normalizePostForm(formData, session, forcedAuthorId)
   data.slug = await uniquePostSlug(data.slug, id)
+  const sourceChanged = (existing?.sourceUrl || '') !== (data.sourceUrl || '')
   const [post] = await db.update(posts).set(data).where(eq(posts.id, id)).returning({ slug: posts.slug })
+  if (sourceChanged) {
+    await db.delete(postSourceChecks).where(eq(postSourceChecks.postId, id))
+  }
   const tagIds = await syncPostTags(id, formData)
   await createPostRevision({
     postId: id,

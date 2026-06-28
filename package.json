@@ -17,7 +17,9 @@
     "migrate": "tsx src/db/migrate-custom.ts",
     "migrate:push": "drizzle-kit push --config=drizzle.config.ts",
     "migrate:create": "drizzle-kit generate --config=drizzle.config.ts",
-    "search:reindex": "tsx src/db/reindex-search.ts"
+    "search:reindex": "tsx src/db/reindex-search.ts",
+    "source-links:check": "tsx src/db/check-source-links.ts",
+    "source-links:cron": "tsx src/db/source-link-cron.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.22",

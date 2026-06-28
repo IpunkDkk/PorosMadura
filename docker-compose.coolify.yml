@@ -108,6 +108,44 @@ services:
       retries: 5
       start_period: 60s
 
+  source-link-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URI: postgres://porosmadura:${SERVICE_PASSWORD_db}@db:5432/${DB_DATABASE:-porosmadura}
+        REDIS_URL: redis://redis:6379/0
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL (e.g. https://porosmadura.com)}
+        BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET}
+        BETTER_AUTH_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+        MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-true}
+        MEILISEARCH_HOST: http://meilisearch:7700
+        MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-}
+        TZ: ${TZ:-Asia/Jakarta}
+    restart: unless-stopped
+    command: ["npm", "run", "source-links:cron"]
+    environment:
+      TZ: ${TZ:-Asia/Jakarta}
+      DATABASE_URI: postgres://porosmadura:${SERVICE_PASSWORD_db}@db:5432/${DB_DATABASE:-porosmadura}
+      REDIS_URL: redis://redis:6379/0
+      MEILISEARCH_ENABLED: ${MEILISEARCH_ENABLED:-true}
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY}
+      SOURCE_LINK_CHECK_CRON_HOUR: ${SOURCE_LINK_CHECK_CRON_HOUR:-2}
+      SOURCE_LINK_CHECK_CRON_MINUTE: ${SOURCE_LINK_CHECK_CRON_MINUTE:-0}
+      SOURCE_LINK_CHECK_LIMIT: ${SOURCE_LINK_CHECK_LIMIT:-100}
+      SOURCE_LINK_CHECK_MAX_AGE_HOURS: ${SOURCE_LINK_CHECK_MAX_AGE_HOURS:-24}
+      SOURCE_LINK_CHECK_DETECT_CHANGES: ${SOURCE_LINK_CHECK_DETECT_CHANGES:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:

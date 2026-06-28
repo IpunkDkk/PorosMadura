@@ -28,6 +28,7 @@ const issueOptions = [
   { value: '', label: 'Semua kelengkapan' },
   { value: 'missing-image', label: 'Tanpa gambar' },
   { value: 'missing-seo', label: 'SEO belum lengkap' },
+  { value: 'source-review', label: 'Sumber bermasalah' },
 ]
 
 function positiveInt(value: string | undefined) {
@@ -177,6 +178,9 @@ export default async function CmsPostsPage({ searchParams }: Props) {
                 <td className="px-4 py-3">
                   <p className="font-semibold text-gray-900">{post.title || 'Tanpa judul'}</p>
                   <p className="text-xs text-text-secondary">/{post.slug}</p>
+                  {post.sourceReviewReason && (
+                    <p className="mt-1 text-xs font-semibold text-amber-700">{post.sourceReviewReason}</p>
+                  )}
                 </td>
                 <td className="px-4 py-3">{post.category?.name || '-'}</td>
                 <td className="px-4 py-3">{post.author?.name || '-'}</td>

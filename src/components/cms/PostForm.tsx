@@ -243,6 +243,18 @@ export function PostForm({
 
         <div className="bg-white border border-border-light rounded-lg p-5 space-y-4">
           <h2 className="font-heading text-lg font-bold">Sumber</h2>
+          {post?.sourceReviewReason && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p className="font-bold">Butuh review sumber</p>
+              <p>{post.sourceReviewReason}</p>
+              {post.sourceCheckedAt && (
+                <p className="mt-1 text-xs">
+                  Dicek {new Date(post.sourceCheckedAt).toLocaleString('id-ID')}
+                  {post.sourceStatusCode ? `, HTTP ${post.sourceStatusCode}` : ''}
+                </p>
+              )}
+            </div>
+          )}
           <input name="sourceName" placeholder="Nama sumber" defaultValue={post?.sourceName || ''} className="w-full rounded-md border border-border-light px-3 py-2 text-sm" />
           <input name="sourceUrl" placeholder="URL sumber" defaultValue={post?.sourceUrl || ''} className="w-full rounded-md border border-border-light px-3 py-2 text-sm" />
         </div>

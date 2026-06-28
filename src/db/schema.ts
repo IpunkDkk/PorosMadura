@@ -1,4 +1,4 @@
-import { pgTable, serial, text, varchar, timestamp, integer, boolean, jsonb, numeric } from 'drizzle-orm/pg-core'
+import { index, pgTable, serial, text, varchar, timestamp, integer, boolean, jsonb, numeric } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
 // ==========================================
@@ -217,6 +217,21 @@ export const posts = pgTable('posts', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
+export const postSourceChecks = pgTable('post_source_checks', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  sourceUrl: text('source_url').notNull(),
+  statusCode: integer('status_code'),
+  contentHash: text('content_hash'),
+  resolvedUrl: text('resolved_url'),
+  reviewReason: text('review_reason'),
+  errorMessage: text('error_message'),
+  checkedAt: timestamp('checked_at').defaultNow().notNull(),
+}, (table) => ({
+  postCheckedAtIdx: index('post_source_checks_post_id_checked_at_idx').on(table.postId, table.checkedAt),
+  reviewReasonIdx: index('post_source_checks_review_reason_idx').on(table.reviewReason),
+}))
+
 export const postTags = pgTable('posts_rels', {
   id: serial('id').primaryKey(),
   order: integer('order'),
@@ -420,6 +435,7 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
     references: [authors.id],
   }),
   postTags: many(postTags),
+  sourceChecks: many(postSourceChecks),
 }))
 
 export const postTagsRelations = relations(postTags, ({ one }) => ({
@@ -430,6 +446,13 @@ export const postTagsRelations = relations(postTags, ({ one }) => ({
   tag: one(tags, {
     fields: [postTags.tagId],
     references: [tags.id],
+  }),
+}))
+
+export const postSourceChecksRelations = relations(postSourceChecks, ({ one }) => ({
+  post: one(posts, {
+    fields: [postSourceChecks.postId],
+    references: [posts.id],
   }),
 }))
 
