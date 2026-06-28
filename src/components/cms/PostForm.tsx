@@ -8,6 +8,7 @@ import { AiPostAssistant } from '@/components/cms/AiPostAssistant'
 import { PostAutosave } from '@/components/cms/PostAutosave'
 import { PostPreviewButton } from '@/components/cms/PostPreviewButton'
 import { PostFocusButton } from '@/components/cms/PostFocusButton'
+import { TagCheckboxList } from '@/components/cms/TagCheckboxList'
 
 type Option = {
   id: number
@@ -230,15 +231,10 @@ export function PostForm({
               ))}
             </select>
           </div>
-          <div className="space-y-2">
-            <p className="text-sm font-semibold">Tags</p>
-            {tags.map((tag) => (
-              <label key={tag.id} className="flex items-center gap-2 text-sm">
-                <input name="tagIds" value={tag.id} type="checkbox" defaultChecked={selectedTagIds.has(tag.id)} className="h-4 w-4" />
-                {tag.name}
-              </label>
-            ))}
-          </div>
+          <TagCheckboxList
+            tags={tags}
+            selectedTagIds={Array.from(selectedTagIds).filter((value): value is number => typeof value === 'number')}
+          />
         </div>
 
         <div className="bg-white border border-border-light rounded-lg p-5 space-y-4">

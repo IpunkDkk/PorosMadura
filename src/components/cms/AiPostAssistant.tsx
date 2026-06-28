@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { AlertCircle, CheckCircle2, Link2, Loader2, Sparkles } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Link2, Loader2, Plus, Sparkles } from 'lucide-react'
 
 type Option = {
   id: number
@@ -26,6 +26,8 @@ type AiDraft = {
     sourceUrl: string
     category: string
     tagNames: string[]
+    suggestedCategoryNames?: string[]
+    suggestedTagNames?: string[]
     featuredImageId?: number
     ogImageId?: number
     readingTime: number
@@ -86,9 +88,14 @@ export function AiPostAssistant({ categories, tags }: AiPostAssistantProps) {
   const [stage, setStage] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [localTags, setLocalTags] = useState<Option[]>(tags)
+  const [suggestedCategories, setSuggestedCategories] = useState<string[]>([])
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([])
+  const [creatingTag, setCreatingTag] = useState('')
   const categoryMap = useMemo(() => {
     return new Map(categories.map((category) => [normalize(category.name), category.id]))
   }, [categories])
+  const availableTags = localTags
 
   function getForm() {
     return rootRef.current?.closest('form') || null
@@ -111,15 +118,62 @@ export function AiPostAssistant({ categories, tags }: AiPostAssistantProps) {
     const form = getForm()
     if (!form) return
 
-    const normalizedAiTags = new Set(tagNames.map(normalize).filter(Boolean))
-    const matchedTagIds = tags
-      .filter((tag) => normalizedAiTags.has(normalize(tag.name)))
+    const normalizedAiTags = tagNames.map(normalize).filter(Boolean)
+    const matchedTagIds = availableTags
+      .filter((tag) => {
+        const tagName = normalize(tag.name)
+        return normalizedAiTags.some((aiTag) => tagName === aiTag || tagName.includes(aiTag) || aiTag.includes(tagName))
+      })
       .map((tag) => String(tag.id))
+
+    window.dispatchEvent(new CustomEvent('cms:set-selected-tags', {
+      detail: { ids: matchedTagIds },
+    }))
 
     form.querySelectorAll<HTMLInputElement>('input[name="tagIds"]').forEach((checkbox) => {
       checkbox.checked = matchedTagIds.includes(checkbox.value)
       dispatchFieldEvent(checkbox)
     })
+  }
+
+  function selectTag(tagId: number) {
+    const form = getForm()
+    if (!form) return
+    const checkbox = form.querySelector<HTMLInputElement>(`input[name="tagIds"][value="${tagId}"]`)
+    if (checkbox) {
+      checkbox.checked = true
+      dispatchFieldEvent(checkbox)
+    }
+  }
+
+  async function createAndSelectTag(name: string) {
+    setCreatingTag(name)
+    setError('')
+    try {
+      const response = await fetch('/api/cms/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      const data = await response.json() as { success?: boolean; tag?: Option; error?: string }
+      if (!response.ok || !data.success || !data.tag) {
+        throw new Error(data.error || 'Gagal membuat tag.')
+      }
+
+      setLocalTags((items) => {
+        if (items.some((item) => item.id === data.tag?.id)) return items
+        return [...items, data.tag as Option]
+      })
+      window.dispatchEvent(new CustomEvent('cms:add-tag-option', {
+        detail: { tag: data.tag },
+      }))
+      selectTag(data.tag.id)
+      setSuggestedTags((items) => items.filter((item) => normalize(item) !== normalize(name)))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal membuat tag.')
+    } finally {
+      setCreatingTag('')
+    }
   }
 
   function applyCategory(categoryName: string) {
@@ -152,6 +206,8 @@ export function AiPostAssistant({ categories, tags }: AiPostAssistantProps) {
     setField('allowIndex', form.allowIndex)
     applyCategory(form.category)
     applyTags(form.tagNames)
+    setSuggestedCategories((form.suggestedCategoryNames || []).filter(Boolean))
+    setSuggestedTags((form.suggestedTagNames || []).filter(Boolean))
     if (form.featuredImageId) {
       setField('featuredImageId', form.featuredImageId)
       window.dispatchEvent(new CustomEvent('cms:set-media-field', {
@@ -213,12 +269,19 @@ export function AiPostAssistant({ categories, tags }: AiPostAssistantProps) {
     setLoading(true)
     setError('')
     setMessage('')
+    setSuggestedCategories([])
+    setSuggestedTags([])
 
     try {
       const response = await fetch('/api/cms/ai-news/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ articleUrl: url, importImage }),
+        body: JSON.stringify({
+          articleUrl: url,
+          importImage,
+          categories,
+          tags: availableTags,
+        }),
       })
       const data = await response.json() as AiDraftResponse
       if (!response.ok || !data.success || !data.jobId) {
@@ -297,6 +360,43 @@ export function AiPostAssistant({ categories, tags }: AiPostAssistantProps) {
                   className="h-full rounded-full bg-poros-red transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {(suggestedCategories.length > 0 || suggestedTags.length > 0) && (
+        <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900">
+          {suggestedCategories.length > 0 && (
+            <div>
+              <p className="mb-2 font-bold">Saran kategori baru</p>
+              <div className="flex flex-wrap gap-2">
+                {suggestedCategories.map((name) => (
+                  <span key={name} className="rounded-full border border-amber-300 bg-white px-2.5 py-1 font-semibold">
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {suggestedTags.length > 0 && (
+            <div>
+              <p className="mb-2 font-bold">Saran tag baru</p>
+              <div className="flex flex-wrap gap-2">
+                {suggestedTags.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => createAndSelectTag(name)}
+                    disabled={Boolean(creatingTag)}
+                    className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-white px-2.5 py-1 font-semibold hover:border-poros-red hover:text-poros-red disabled:opacity-60"
+                  >
+                    {creatingTag === name ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                    {name}
+                  </button>
+                ))}
               </div>
             </div>
           )}

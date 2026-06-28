@@ -10,6 +10,16 @@ export type AiNewsProgress = {
 
 type AiNewsProgressCallback = (progress: AiNewsProgress) => void | Promise<void>
 
+export type AiNewsTaxonomyOption = {
+  id?: number
+  name: string
+}
+
+export type AiNewsDraftOptions = {
+  categories?: AiNewsTaxonomyOption[]
+  tags?: AiNewsTaxonomyOption[]
+}
+
 export type AiPostDraft = {
   source: {
     url: string
@@ -29,6 +39,8 @@ export type AiPostDraft = {
     sourceUrl: string
     category: string
     tagNames: string[]
+    suggestedCategoryNames: string[]
+    suggestedTagNames: string[]
     featuredImageId?: number
     ogImageId?: number
     readingTime: number
@@ -66,6 +78,33 @@ function get9RouterConfig() {
     textModel: process.env.NINE_ROUTER_TEXT_MODEL || 'kr/claude-sonnet-4.5',
     fallbackModel: process.env.NINE_ROUTER_FALLBACK_MODEL || '',
   }
+}
+
+function taxonomyList(options: AiNewsTaxonomyOption[] | undefined, fallback: string[]) {
+  const names = (options || [])
+    .map((option) => option.name.trim())
+    .filter(Boolean)
+  return names.length ? names : fallback
+}
+
+function normalizeTaxonomyName(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function matchTaxonomyName(value: string, available: string[]) {
+  const normalized = normalizeTaxonomyName(value)
+  if (!normalized) return ''
+  const exact = available.find((item) => normalizeTaxonomyName(item) === normalized)
+  if (exact) return exact
+  return available.find((item) => {
+    const candidate = normalizeTaxonomyName(item)
+    return candidate && (candidate.includes(normalized) || normalized.includes(candidate))
+  }) || ''
 }
 
 async function call9Router(path: string, body: JsonObject, timeoutMs: number) {
@@ -411,6 +450,7 @@ function estimateReadingTime(text: string) {
 export async function generateAiPostDraft(
   articleUrl: string,
   onProgress?: AiNewsProgressCallback,
+  options: AiNewsDraftOptions = {},
 ): Promise<AiPostDraft> {
   if (!/^https?:\/\//i.test(articleUrl)) {
     throw new Error('URL artikel harus diawali http:// atau https://')
@@ -423,6 +463,27 @@ export async function generateAiPostDraft(
   const scraped = await scrapeArticle(articleUrl)
   await onProgress?.({ stage: 'scrape', progress: 25, message: 'Konten artikel sumber berhasil dibaca' })
   const sourcePayload = `SOURCE TITLE: ${scraped.title}\nSOURCE SITE: ${scraped.siteName}\nSOURCE URL: ${articleUrl}\n\nSOURCE CONTENT:\n${scraped.text}`
+  const categoryOptions = taxonomyList(options.categories, [
+    'Nasional',
+    'Madura',
+    'Politik',
+    'Ekonomi',
+    'Olahraga',
+    'Teknologi',
+    'Lifestyle',
+    'Budaya',
+    'Viral',
+    'Daerah',
+  ])
+  const tagOptions = taxonomyList(options.tags, [])
+  const taxonomyInstruction = [
+    `Kategori CMS yang tersedia: ${categoryOptions.join(', ')}.`,
+    tagOptions.length
+      ? `Tag CMS yang tersedia: ${tagOptions.join(', ')}. Pilih 3-8 tag dari daftar ini yang paling relevan. Jangan membuat tag baru.`
+      : 'Belum ada tag CMS tersedia. Isi tagNames dengan array kosong.',
+    'suggestedCategoryNames isi array nama kategori baru yang direkomendasikan hanya jika kategori CMS tidak cukup spesifik; jika tidak perlu, isi array kosong.',
+    'suggestedTagNames isi 3-8 tag baru yang relevan jika tag CMS tidak tersedia atau kurang cocok; jangan masukkan tag yang sudah ada di daftar tag CMS.',
+  ].join('\n')
   const pipeline: string[] = ['scrape']
 
   await onProgress?.({ stage: 'article', progress: 35, message: 'Menulis draft artikel CMS' })
@@ -438,11 +499,13 @@ Aturan mutlak:
 - Kutipan langsung boleh dipertahankan apa adanya, tetapi narasi di luar kutipan harus ditulis ulang.
 - content harus 5-9 paragraf, dipisah newline ganda, bukan HTML.
 - excerpt maksimal 160 karakter.
-- category pilih salah satu: viral, kriminal, politik, olahraga, hiburan, kesehatan, ekonomi, nasional, internasional, teknologi, bencana, breaking news.
-- tagNames berisi 3-8 tag pendek yang relevan.`,
-    `${sourcePayload}\n\nJSON field wajib: title, excerpt, content, category, tagNames.`,
+- category wajib pilih satu nama persis dari daftar kategori CMS.
+- tagNames wajib memakai nama persis dari daftar tag CMS jika tersedia.
+- suggestedCategoryNames dan suggestedTagNames wajib berupa array.
+${taxonomyInstruction}`,
+    `${sourcePayload}\n\nJSON field wajib: title, excerpt, content, category, tagNames, suggestedCategoryNames, suggestedTagNames.`,
     4200,
-    'title, excerpt, content, category, tagNames',
+    'title, excerpt, content, category, tagNames, suggestedCategoryNames, suggestedTagNames',
   )
   pipeline.push('article')
 
@@ -462,10 +525,13 @@ Aturan mutlak:
 - Tetap gaya newsroom Indonesia yang netral, padat, dan mudah dibaca.
 - content harus 5-9 paragraf, dipisah newline ganda, bukan HTML.
 - excerpt maksimal 160 karakter.
-- Pertahankan category dan tagNames jika masih relevan.`,
-    `${sourcePayload}\n\nDRAFT SAAT INI:\n${JSON.stringify(article)}\n\nJSON field wajib: title, excerpt, content, category, tagNames.`,
+- category wajib tetap satu nama persis dari daftar kategori CMS.
+- tagNames wajib memakai nama persis dari daftar tag CMS jika tersedia.
+- Pertahankan atau perbarui suggestedCategoryNames dan suggestedTagNames jika masih relevan.
+${taxonomyInstruction}`,
+    `${sourcePayload}\n\nDRAFT SAAT INI:\n${JSON.stringify(article)}\n\nJSON field wajib: title, excerpt, content, category, tagNames, suggestedCategoryNames, suggestedTagNames.`,
     4200,
-    'title, excerpt, content, category, tagNames',
+    'title, excerpt, content, category, tagNames, suggestedCategoryNames, suggestedTagNames',
   )
   pipeline.push('rewrite')
 
@@ -501,7 +567,27 @@ Aturan:
   const contentText = stringField(article.content, scraped.text)
   const excerpt = stringField(article.excerpt, contentText.replace(/\s+/g, ' ').slice(0, 157))
   const slug = slugify(stringField(seo.slug, title)) || slugify(title)
-  const tagNames = [...new Set([...stringArray(article.tagNames), ...stringArray(seo.seoKeywords)])].slice(0, 10)
+  const selectedCategory = matchTaxonomyName(stringField(article.category, ''), categoryOptions) || categoryOptions[0] || ''
+  const rawTagNames = [...new Set([...stringArray(article.tagNames), ...stringArray(seo.seoKeywords)])]
+  const tagNames = tagOptions.length
+    ? [...new Set(rawTagNames.map((tag) => matchTaxonomyName(tag, tagOptions)).filter(Boolean))].slice(0, 8)
+    : []
+  const rawSuggestedTags = [
+    ...stringArray(article.suggestedTagNames),
+    ...rawTagNames.filter((tag) => !matchTaxonomyName(tag, tagOptions)),
+  ]
+  const suggestedTagNames = rawSuggestedTags
+    .filter((tag) => !tagOptions.length || !matchTaxonomyName(tag, tagOptions))
+    .filter((tag, index, array) => array.findIndex((item) => normalizeTaxonomyName(item) === normalizeTaxonomyName(tag)) === index)
+    .slice(0, 8)
+  const rawSuggestedCategories = [
+    ...stringArray(article.suggestedCategoryNames),
+    stringField(article.category, ''),
+  ]
+  const suggestedCategoryNames = rawSuggestedCategories
+    .filter((category) => category && !matchTaxonomyName(category, categoryOptions))
+    .filter((category, index, array) => array.findIndex((item) => normalizeTaxonomyName(item) === normalizeTaxonomyName(category)) === index)
+    .slice(0, 3)
 
   const draft: AiPostDraft = {
     source: {
@@ -520,8 +606,10 @@ Aturan:
       canonicalUrl: articleUrl,
       sourceName: scraped.siteName,
       sourceUrl: articleUrl,
-      category: stringField(article.category, ''),
+      category: selectedCategory,
       tagNames,
+      suggestedCategoryNames,
+      suggestedTagNames,
       readingTime: estimateReadingTime(contentText),
       status: 'draft',
       allowIndex: true,

@@ -9,7 +9,7 @@ import { CmsConfirmSubmit } from '@/components/cms/CmsConfirmSubmit'
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
-type MediaItem = {
+export type CropMediaItem = {
   id: number
   alt?: string | null
   caption?: string | null
@@ -25,6 +25,8 @@ type MediaItem = {
   sizesHeroUrl?: string | null
   sizesOgUrl?: string | null
 }
+
+type MediaItem = CropMediaItem
 
 function formatBytes(bytes: number | null | undefined) {
   if (!bytes) return '-'
@@ -47,7 +49,7 @@ function mediaPreviewUrl(item: MediaItem) {
   return item.sizesCardUrl || item.sizesThumbnailUrl || item.sizesHeroUrl || getMediaUrl(item as Record<string, unknown>).split('?')[0]
 }
 
-function MediaCropForm({ item }: { item: MediaItem }) {
+export function MediaCropForm({ item, onSaved }: { item: CropMediaItem; onSaved?: () => void }) {
   const width = item.width || 0
   const height = item.height || 0
   const cropFrameRef = useRef<HTMLDivElement>(null)
@@ -71,7 +73,7 @@ function MediaCropForm({ item }: { item: MediaItem }) {
   })
   const [isSavingCrop, setIsSavingCrop] = useState(false)
   const [cropError, setCropError] = useState('')
-  const originalUrl = getMediaUrl(item as Record<string, unknown>)
+  const editorImageUrl = mediaPreviewUrl(item)
 
   if (!width || !height) {
     return (
@@ -196,7 +198,8 @@ function MediaCropForm({ item }: { item: MediaItem }) {
         setIsSavingCrop(true)
         try {
           await cropMediaAction(item.id, formData)
-          window.location.reload()
+          if (onSaved) onSaved()
+          else window.location.reload()
         } catch (error) {
           setCropError(error instanceof Error ? error.message : 'Crop gagal. Coba ulangi.')
           setIsSavingCrop(false)
@@ -221,7 +224,7 @@ function MediaCropForm({ item }: { item: MediaItem }) {
           className="relative aspect-[16/10] overflow-hidden rounded-lg border border-border-light bg-gray-950"
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- Crop editor needs natural image ratio and overlay alignment. */}
-          <img src={originalUrl} alt={item.alt || ''} className="h-full w-full object-contain" draggable={false} />
+          <img src={editorImageUrl} alt={item.alt || ''} className="h-full w-full object-contain" draggable={false} />
         <div className="absolute inset-0 bg-black/40" />
         <div
           role="button"

@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Image as ImageIcon, X, Check } from 'lucide-react'
+import { Crop, Image as ImageIcon, X, Check } from 'lucide-react'
 import { getMediaUrl } from '@/lib/media'
+import { MediaCropForm, type CropMediaItem } from '@/components/cms/MediaGrid'
 
 type MediaItem = {
   id: number
@@ -12,6 +13,9 @@ type MediaItem = {
   url?: string | null
   sizesThumbnailUrl?: string | null
   sizesCardUrl?: string | null
+  sizesHeroUrl?: string | null
+  width?: number | null
+  height?: number | null
 }
 
 type MediaPickerProps = {
@@ -32,6 +36,7 @@ export function MediaPickerModal({
   clearLabel = 'Tanpa gambar',
 }: MediaPickerProps) {
   const [open, setOpen] = useState(false)
+  const [cropOpen, setCropOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string>(defaultValue ? String(defaultValue) : '')
   const [injectedItems, setInjectedItems] = useState<MediaItem[]>([])
 
@@ -109,20 +114,60 @@ export function MediaPickerModal({
         </button>
 
         {selectedItem && (
-          <div className="mt-2 flex items-center justify-between">
+          <div className="mt-2 flex items-center justify-between gap-2">
             <p className="text-xs text-text-secondary truncate text-left max-w-[200px]" title={selectedItem.alt || selectedItem.filename || ''}>
               {selectedItem.alt || selectedItem.filename}
             </p>
-            <button
-              type="button"
-              onClick={() => setSelectedId('')}
-              className="ml-2 shrink-0 text-xs font-semibold text-poros-red hover:underline"
-            >
-              Hapus pilihan
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCropOpen(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-poros-navy hover:text-poros-red"
+              >
+                <Crop size={12} /> Sunting
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedId('')}
+                className="text-xs font-semibold text-poros-red hover:underline"
+              >
+                Hapus
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {cropOpen && selectedItem && (
+        <div
+          className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/65 px-4 py-8"
+          onClick={() => setCropOpen(false)}
+        >
+          <div
+            className="w-full max-w-4xl rounded-xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase text-poros-red">Sunting gambar artikel</p>
+                <h2 className="font-heading text-lg font-bold text-poros-navy">{selectedItem.alt || selectedItem.filename || 'Media'}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCropOpen(false)}
+                className="rounded-md p-1.5 text-text-secondary hover:bg-gray-100"
+                aria-label="Tutup"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <MediaCropForm
+              item={selectedItem as CropMediaItem}
+              onSaved={() => window.location.reload()}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {open && (

@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto'
-import { generateAiPostDraft } from '@/lib/ai-news'
+import { generateAiPostDraft, type AiNewsTaxonomyOption } from '@/lib/ai-news'
 import { getRedisClient } from '@/lib/cache'
 import { importRemoteImageToMedia } from '@/lib/media-import'
 
-const QUEUE_KEY = 'ai-news:queue'
+const WORKER_VERSION = 'taxonomy-suggestions-v2'
+const QUEUE_KEY = `ai-news:queue:${WORKER_VERSION}`
 const JOB_KEY_PREFIX = 'ai-news:job:'
 const JOB_TTL_SECONDS = 60 * 60
 
@@ -17,6 +18,8 @@ export type AiNewsJobSnapshot = {
   message: string
   articleUrl: string
   importImage: boolean
+  categories?: AiNewsTaxonomyOption[]
+  tags?: AiNewsTaxonomyOption[]
   createdAt: string
   updatedAt: string
   startedAt?: string
@@ -28,6 +31,7 @@ export type AiNewsJobSnapshot = {
 
 type WorkerGlobal = typeof globalThis & {
   __porosAiNewsWorkerStarted?: boolean
+  __porosAiNewsWorkerVersion?: string
 }
 
 function jobKey(id: string) {
@@ -49,6 +53,8 @@ function parseSnapshot(id: string, fields: Record<string, string>): AiNewsJobSna
     message: fields.message || '',
     articleUrl: fields.articleUrl || '',
     importImage: fields.importImage === 'true',
+    categories: fields.categories ? JSON.parse(fields.categories) : undefined,
+    tags: fields.tags ? JSON.parse(fields.tags) : undefined,
     createdAt: fields.createdAt || '',
     updatedAt: fields.updatedAt || '',
     startedAt: fields.startedAt || undefined,
@@ -79,7 +85,11 @@ async function updateJob(
   await redis.expire(jobKey(id), JOB_TTL_SECONDS)
 }
 
-export async function enqueueAiNewsJob(articleUrl: string, options: { importImage?: boolean } = {}) {
+export async function enqueueAiNewsJob(articleUrl: string, options: {
+  importImage?: boolean
+  categories?: AiNewsTaxonomyOption[]
+  tags?: AiNewsTaxonomyOption[]
+} = {}) {
   const redis = getRedisClient()
   if (!redis) {
     throw new Error('Redis tidak tersedia untuk menjalankan AI worker')
@@ -96,6 +106,8 @@ export async function enqueueAiNewsJob(articleUrl: string, options: { importImag
     message: 'Job AI masuk antrean',
     articleUrl,
     importImage: options.importImage ? 'true' : 'false',
+    categories: JSON.stringify(options.categories || []),
+    tags: JSON.stringify(options.tags || []),
     createdAt,
     updatedAt: createdAt,
   })
@@ -128,7 +140,14 @@ async function processJob(id: string) {
   })
 
   try {
-    const draft = await generateAiPostDraft(snapshot.articleUrl, (progress) => updateJob(id, progress))
+    const draft = await generateAiPostDraft(
+      snapshot.articleUrl,
+      (progress) => updateJob(id, progress),
+      {
+        categories: snapshot.categories,
+        tags: snapshot.tags,
+      },
+    )
     const warnings: string[] = []
 
     if (snapshot.importImage && draft.source.imageUrl) {
@@ -202,9 +221,13 @@ async function workerLoop() {
 
 export function startAiNewsWorker() {
   const globalForWorker = globalThis as WorkerGlobal
-  if (globalForWorker.__porosAiNewsWorkerStarted) return
+  if (
+    globalForWorker.__porosAiNewsWorkerStarted &&
+    globalForWorker.__porosAiNewsWorkerVersion === WORKER_VERSION
+  ) return
   if (!getRedisClient()) return
 
   globalForWorker.__porosAiNewsWorkerStarted = true
+  globalForWorker.__porosAiNewsWorkerVersion = WORKER_VERSION
   void workerLoop()
 }
