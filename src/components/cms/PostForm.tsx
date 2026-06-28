@@ -9,6 +9,7 @@ import { PostAutosave } from '@/components/cms/PostAutosave'
 import { PostPreviewButton } from '@/components/cms/PostPreviewButton'
 import { PostFocusButton } from '@/components/cms/PostFocusButton'
 import { TagCheckboxList } from '@/components/cms/TagCheckboxList'
+import { formatDatetimeLocalValue } from '@/lib/date'
 
 type Option = {
   id: number
@@ -22,13 +23,6 @@ type PostFormProps = {
   tags: Option[]
   mediaItems?: any[]
   selectedTagIds?: Set<number | null>
-}
-
-function inputDate(value: unknown) {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(String(value))
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toISOString().slice(0, 16)
 }
 
 function escapeHtml(value: string) {
@@ -171,7 +165,7 @@ export function PostForm({
               id="publishedAt"
               name="publishedAt"
               type="datetime-local"
-              defaultValue={inputDate(post?.publishedAt)}
+              defaultValue={formatDatetimeLocalValue(post?.publishedAt)}
               className="w-full rounded-md border border-border-light px-3 py-2 text-sm"
             />
           </div>

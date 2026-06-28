@@ -1,14 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Save } from 'lucide-react'
+import { formatDatetimeLocalValue } from '@/lib/date'
 import { getMediaUrl } from '@/lib/media'
-
-function dateInput(value: unknown) {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(String(value))
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toISOString().slice(0, 16)
-}
 
 export function AdForm({
   ad,
@@ -168,7 +162,7 @@ export function AdForm({
             name="startDate"
             type="datetime-local"
             required
-            defaultValue={dateInput(ad?.startDate)}
+            defaultValue={formatDatetimeLocalValue(ad?.startDate)}
             className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-poros-red/30"
           />
         </div>
@@ -181,7 +175,7 @@ export function AdForm({
             name="endDate"
             type="datetime-local"
             required
-            defaultValue={dateInput(ad?.endDate)}
+            defaultValue={formatDatetimeLocalValue(ad?.endDate)}
             className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-poros-red/30"
           />
         </div>

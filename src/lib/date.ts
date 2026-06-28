@@ -14,3 +14,16 @@ export function formatRelativeTime(dateStr: string): string {
   if (diffDays < 7) return `${diffDays} hari yang lalu`
   return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })
 }
+
+export function formatDatetimeLocalValue(value: unknown): string {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(String(value))
+  if (Number.isNaN(date.getTime())) return ''
+
+  const pad = (part: number) => String(part).padStart(2, '0')
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}

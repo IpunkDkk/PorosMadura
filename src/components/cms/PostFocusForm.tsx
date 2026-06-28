@@ -6,6 +6,7 @@ import { PostAutosave } from '@/components/cms/PostAutosave'
 import { PostPreviewButton } from '@/components/cms/PostPreviewButton'
 import { PostFocusEditor } from '@/components/cms/PostFocusEditor'
 import { PostFocusSidePanel } from '@/components/cms/PostFocusSidePanel'
+import { formatDatetimeLocalValue } from '@/lib/date'
 
 type Option = {
   id: number
@@ -20,13 +21,6 @@ type PostFocusFormProps = {
   tags: Option[]
   mediaItems?: any[]
   selectedTagIds?: Set<number | null>
-}
-
-function inputDate(value: unknown) {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(String(value))
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toISOString().slice(0, 16)
 }
 
 function escapeHtml(value: string) {
@@ -146,7 +140,7 @@ export function PostFocusForm({
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2" htmlFor="publishedAt">Tanggal Publish</label>
-              <input id="publishedAt" name="publishedAt" type="datetime-local" defaultValue={inputDate(post.publishedAt)} className="w-full rounded-md border border-border-light px-3 py-2 text-sm" />
+              <input id="publishedAt" name="publishedAt" type="datetime-local" defaultValue={formatDatetimeLocalValue(post.publishedAt)} className="w-full rounded-md border border-border-light px-3 py-2 text-sm" />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2" htmlFor="readingTime">Menit baca</label>
