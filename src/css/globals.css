@@ -62,3 +62,8 @@
   outline: 3px solid var(--color-poros-red) !important;
   box-shadow: 0 0 10px rgba(198, 30, 33, 0.3) !important;
 }
+
+.prose blockquote p:first-of-type::before,
+.prose blockquote p:last-of-type::after {
+  content: none;
+}
