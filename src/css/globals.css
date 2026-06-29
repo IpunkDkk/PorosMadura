@@ -82,3 +82,57 @@
   font-style: inherit;
   font-weight: inherit;
 }
+
+.cms-content {
+  overflow-x: clip;
+}
+
+.cms-content .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+.cms-content table {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .cms-content .items-center.justify-between {
+    flex-wrap: wrap;
+    row-gap: 0.75rem;
+  }
+
+  .cms-content h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .cms-content section,
+  .cms-content form,
+  .cms-content details {
+    max-width: 100%;
+  }
+
+  .cms-content table {
+    font-size: 0.8125rem;
+  }
+
+  .cms-content th,
+  .cms-content td {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .cms-content input,
+  .cms-content select,
+  .cms-content textarea,
+  .cms-content button {
+    max-width: 100%;
+  }
+
+  .cms-content .ProseMirror {
+    min-height: 320px;
+  }
+
+  .cms-content .prose {
+    font-size: 1rem;
+  }
+}
