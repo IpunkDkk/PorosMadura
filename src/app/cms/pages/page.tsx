@@ -21,49 +21,51 @@ export default async function CmsPagesPage() {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border-light bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-text-secondary">
-            <tr>
-              <th className="px-4 py-3">Judul</th>
-              <th className="px-4 py-3">Slug</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Terakhir Diperbarui</th>
-              <th className="px-4 py-3 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-light">
-            {pagesList.map((page) => (
-              <tr key={page.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-gray-900">{page.title || 'Tanpa judul'}</p>
-                </td>
-                <td className="px-4 py-3 text-text-secondary">/{page.slug}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase ${
-                    page.status === 'published'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {page.status || 'draft'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-text-secondary">
-                  {formatPortalDateTime(page.updatedAt) || '-'}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link href={`/cms/pages/${page.slug}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">
-                    <Pencil size={14} /> Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {!pagesList.length && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-gray-50 text-xs uppercase text-text-secondary">
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-text-secondary">Belum ada halaman statis.</td>
+                <th className="px-4 py-3">Judul</th>
+                <th className="px-4 py-3">Slug</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Terakhir Diperbarui</th>
+                <th className="px-4 py-3 text-right">Aksi</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border-light">
+              {pagesList.map((page) => (
+                <tr key={page.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-gray-900">{page.title || 'Tanpa judul'}</p>
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">/{page.slug}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase ${
+                      page.status === 'published'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {page.status || 'draft'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {formatPortalDateTime(page.updatedAt) || '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link href={`/cms/pages/${page.slug}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">
+                      <Pencil size={14} /> Edit
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {!pagesList.length && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-text-secondary">Belum ada halaman statis.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

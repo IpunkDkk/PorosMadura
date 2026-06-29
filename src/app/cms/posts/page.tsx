@@ -162,61 +162,63 @@ export default async function CmsPostsPage({ searchParams }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border-light bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-text-secondary">
-            <tr>
-              <th className="px-4 py-3">Judul</th>
-              <th className="px-4 py-3">Kategori</th>
-              <th className="px-4 py-3">Penulis</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Publish</th>
-              <th className="px-4 py-3 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-light">
-            {posts.map((post) => (
-              <tr key={post.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-gray-900">{post.title || 'Tanpa judul'}</p>
-                  <p className="text-xs text-text-secondary">/{post.slug}</p>
-                  {post.sourceReviewReason && (
-                    <p className="mt-1 text-xs font-semibold text-amber-700">{post.sourceReviewReason}</p>
-                  )}
-                </td>
-                <td className="px-4 py-3">{post.category?.name || '-'}</td>
-                <td className="px-4 py-3">{post.author?.name || '-'}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase ${
-                    post.status === 'published'
-                      ? 'bg-green-100 text-green-700'
-                      : post.status === 'scheduled'
-                        ? 'bg-blue-100 text-blue-700'
-                        : post.status === 'review'
-                          ? 'bg-amber-100 text-amber-700'
-                          : post.status === 'archived'
-                            ? 'bg-rose-100 text-rose-700'
-                            : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {post.status || 'draft'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {formatPortalDateTime(post.publishedAt) || '-'}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link href={`/cms/posts/${post.slug}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">
-                    <Pencil size={14} /> Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {!posts.length && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-gray-50 text-xs uppercase text-text-secondary">
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-text-secondary">Belum ada artikel.</td>
+                <th className="px-4 py-3">Judul</th>
+                <th className="px-4 py-3">Kategori</th>
+                <th className="px-4 py-3">Penulis</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Publish</th>
+                <th className="px-4 py-3 text-right">Aksi</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border-light">
+              {posts.map((post) => (
+                <tr key={post.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-gray-900">{post.title || 'Tanpa judul'}</p>
+                    <p className="text-xs text-text-secondary">/{post.slug}</p>
+                    {post.sourceReviewReason && (
+                      <p className="mt-1 text-xs font-semibold text-amber-700">{post.sourceReviewReason}</p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">{post.category?.name || '-'}</td>
+                  <td className="px-4 py-3">{post.author?.name || '-'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase ${
+                      post.status === 'published'
+                        ? 'bg-green-100 text-green-700'
+                        : post.status === 'scheduled'
+                          ? 'bg-blue-100 text-blue-700'
+                          : post.status === 'review'
+                            ? 'bg-amber-100 text-amber-700'
+                            : post.status === 'archived'
+                              ? 'bg-rose-100 text-rose-700'
+                              : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {post.status || 'draft'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {formatPortalDateTime(post.publishedAt) || '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link href={`/cms/posts/${post.slug}`} className="inline-flex items-center gap-1 font-bold text-poros-red hover:text-red-700">
+                      <Pencil size={14} /> Edit
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {!posts.length && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-text-secondary">Belum ada artikel.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {result.totalPages > 1 && (

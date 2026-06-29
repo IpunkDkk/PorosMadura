@@ -190,39 +190,41 @@ export default async function CmsDashboardPage() {
             Lihat semua
           </Link>
         </div>
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-text-secondary">
-            <tr>
-              <th className="px-4 py-3">Judul</th>
-              <th className="px-4 py-3">Kategori</th>
-              <th className="px-4 py-3">Penulis</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-light">
-            {recentPosts.map((post) => (
-              <tr key={post.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-semibold text-gray-900">{post.title || 'Tanpa judul'}</td>
-                <td className="px-4 py-3">{post.category?.name || '-'}</td>
-                <td className="px-4 py-3">{post.author?.name || '-'}</td>
-                <td className="px-4 py-3">
-                  {statusBadge(post.status)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link href={`/cms/posts/${post.id}`} className="font-bold text-poros-red hover:text-red-700">
-                    Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {!recentPosts.length && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-gray-50 text-xs uppercase text-text-secondary">
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-text-secondary">Belum ada artikel.</td>
+                <th className="px-4 py-3">Judul</th>
+                <th className="px-4 py-3">Kategori</th>
+                <th className="px-4 py-3">Penulis</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Aksi</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border-light">
+              {recentPosts.map((post) => (
+                <tr key={post.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-semibold text-gray-900">{post.title || 'Tanpa judul'}</td>
+                  <td className="px-4 py-3">{post.category?.name || '-'}</td>
+                  <td className="px-4 py-3">{post.author?.name || '-'}</td>
+                  <td className="px-4 py-3">
+                    {statusBadge(post.status)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link href={`/cms/posts/${post.id}`} className="font-bold text-poros-red hover:text-red-700">
+                      Edit
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {!recentPosts.length && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-text-secondary">Belum ada artikel.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   )
